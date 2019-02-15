@@ -16,5 +16,3 @@ urlpatterns = [
     path('gwas/<pk>/manhattan', views.gwas_manhattan_json, name='manhattan-json'),  # JSON endpoint; move to API?
     path('gwas/<pk>/region/', views.GwasLocus.as_view(), name='region'),
 ]
-
-

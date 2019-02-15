@@ -153,7 +153,7 @@ AWS_PRELOAD_METADATA = True
 # ------------------------------------------------------------------------------
 # https://docs.sentry.io/clients/python/integrations/django/
 INSTALLED_APPS += ['raven.contrib.django.raven_compat']  # noqa F405
-MIDDLEWARE = ['raven.contrib.django.raven_compat.middleware.SentryResponseErrorIdMiddleware'] + MIDDLEWARE
+MIDDLEWARE = ['raven.contrib.django.raven_compat.middleware.SentryResponseErrorIdMiddleware'] + MIDDLEWARE  # NOQA
 
 # Sentry
 # ------------------------------------------------------------------------------

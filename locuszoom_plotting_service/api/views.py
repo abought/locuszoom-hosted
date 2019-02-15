@@ -27,7 +27,7 @@ class GwasRegionView(generics.RetrieveAPIView):
     # TODO: Improve serialization, error handling, etc. (in errors section, not detail)
     """
     renderer_classes = [drf_renderers.JSONRenderer]
-    filter_backends = []
+    filter_backends: list = []
     queryset = lz_models.Gwas.objects.all()
     serializer_class = serializers.GwasFileSerializer
 

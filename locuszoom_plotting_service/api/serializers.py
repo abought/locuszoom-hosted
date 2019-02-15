@@ -48,12 +48,15 @@ class GwasFileSerializer(object):
                         'chromosome': r[0],
                         'position': int(r[1]),
                         'ref_allele': r[2],
-                        'log_pvalue': -decimal.Decimal(r[4]).log10(),  # TODO: replace with locuszoom_db code - https://github.com/statgen/locuszoom-db/blob/master/locuszoom/db/loaders.py#L80
+                        # TODO: replace with locuszoom_db code -
+                        #   https://github.com/statgen/locuszoom-db/blob/master/locuszoom/db/loaders.py#L80
+                        'log_pvalue': -decimal.Decimal(r[4]).log10(),
                         'variant': f'{r[0]}:{r[1]}_{r[2]}/{r[3]}'  # TODO: Phasing marker?
                     }
                 data.append(parsed)
-            except:
-                # FIXME: How do we handle extreme pvalues on a log plot? (yields domain errors on server unless we use decimal instead of float)
+            except Exception:
+                # FIXME: How do we handle extreme pvalues on a log plot? (yields domain errors on server unless we
+                #   use decimal instead of float)
                 # FIXME: This is almost certainly not the ideal choice post-demo stage
                 print(r)
         return {'data': data}
