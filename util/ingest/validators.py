@@ -2,16 +2,17 @@
 
 import functools
 import itertools
+import logging
 
 import magic
 
-from pheweb.utils import chrom_order_list
+from pheweb.utils import chrom_order
 
 from .loaders import make_reader
 from util.zorp.readers import BaseReader
 
 
-ALLOWED_CHROMS = frozenset(chrom_order_list)
+logger = logging.getLogger(__name__)
 
 
 def _false_on_fail(func):
@@ -21,7 +22,8 @@ def _false_on_fail(func):
     def wrapper(*args, **kwargs):
         try:
             return func(*args, **kwargs)
-        except Exception:
+        except Exception as e:
+            logger.exception(e)
             return False
     return wrapper
 
@@ -51,13 +53,14 @@ class _GwasValidator:
         return mimetype in ['application/gzip', 'text/plain']
 
     @_false_on_fail
-    def validate_headers(self, reader) -> bool:
+    def _validate_headers(self, reader) -> bool:
         n_head, content = reader.get_headers()
-
-        # First version: match headers to an expected string
+        # First version: match headers to an expected string + row count
         # TODO: replace with a sniffer class that simply says "has all columns required"
-        matches_headers = (content.lower().split(self._delimiter) == self._headers)
-        return bool(n_head == 1 and matches_headers)
+        return all([
+            n_head == 1,
+            tuple(content.lower().split(self._delimiter)) == self._headers
+        ])
 
     @_false_on_fail
     def _validate_data_rows(self, reader) -> bool:
@@ -65,9 +68,16 @@ class _GwasValidator:
         # Horked from PheWeb's `load.read_input_file.PhenoReader` class
         cp_groups = itertools.groupby(reader, key=lambda v: (v.chrom, v.pos))
 
-        prev_chrom_index, prev_pos = -1, -1
+        def _get_chrom_index(chrom):
+            try:
+                return chrom_order[chrom]
+            except KeyError:
+                raise Exception('PheWeb pipeline does not support the specified chromosome')
+
+        prev_chrom_index = -1
+        prev_pos = -1
         for cp, tied_variants in cp_groups:
-            chrom_index = chrom_order_list.get(cp[0])
+            chrom_index = _get_chrom_index(cp[0])
             if chrom_index < prev_chrom_index:
                 # Chroms in wrong order for PheWeb to use  - TODO is this a mandatory constraint for the pieces we use?
                 return False
@@ -75,6 +85,9 @@ class _GwasValidator:
             if chrom_index == prev_chrom_index and cp[1] < prev_pos:
                 # Positions not in correct order for Pheweb to use
                 return False
+
+            prev_chrom_index = chrom_index
+            prev_pos = cp[1]
 
         # Must make it through the entire file without parsing errors, with all chroms in order, and find at least
         #   one row of data
@@ -84,7 +97,7 @@ class _GwasValidator:
     def _validate_contents(self, reader: BaseReader) -> bool:
         """All tests on contents; useful for unit testing"""
         return all([
-            self.validate_headers(reader),
+            self._validate_headers(reader),
             self._validate_data_rows(reader),
         ])
 

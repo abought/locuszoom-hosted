@@ -1,5 +1,0 @@
-"""Test """
-
-
-class TestValidation:
-    pass
