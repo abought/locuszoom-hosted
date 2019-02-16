@@ -50,7 +50,7 @@ class _GwasValidator:
     @_false_on_fail
     def _validate_mimetype(self, mimetype: str) -> bool:
         """Uploaded either a gzipped file or plain text"""
-        return mimetype in ['application/gzip', 'text/plain']
+        return (mimetype in ['application/gzip', 'application/gzip']) or mimetype.startswith('text/')
 
     @_false_on_fail
     def _validate_headers(self, reader) -> bool:

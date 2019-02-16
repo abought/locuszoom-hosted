@@ -1,5 +1,5 @@
 """
-Coordinate file format detection and loading
+Coordinate file format detection and loading. Format detection, reader instance creation, etc..
 
 # TODO: Generalize and move to ZORP iff useful
 """
@@ -13,10 +13,10 @@ from util.zorp.readers import (
 
 def make_reader(filename, mimetype: str = None) -> BaseReader:
     mimetype = mimetype or magic.from_file(filename, mime=True)
-    if mimetype == 'application/gzip':
+    if mimetype in ('application/gzip', 'application/x-gzip'):
         parser = TabixReader
-    elif mimetype == 'text/plain':
+    elif mimetype.startswith('text/'):
         parser = TextFileReader
     else:
-        raise Exception('Unsupported filetype')
+        raise Exception(f'Unsupported file encoding: {mimetype}')
     return parser(filename, parser=standard_gwas_parser, skip_rows=1)
