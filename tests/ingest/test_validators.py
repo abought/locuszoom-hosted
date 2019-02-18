@@ -10,7 +10,7 @@ from util.zorp import (
 class TestStandardGwasValidator:
     def test_valid_headers(self):
         reader = readers.IterableReader([
-            "#chrom\tpos\tref\talt\tlogpvalue",
+            "#chrom\tpos\tref\talt\tpvalue",
             "1\t1\tA\tC\t7.3"
             "X\t1\tA\tC\t7.3"
         ], parser=parsers.standard_gwas_parser, skip_rows=1)
@@ -20,7 +20,7 @@ class TestStandardGwasValidator:
 
     def test_valid_input(self):
         reader = readers.IterableReader([
-            "#chrom\tpos\tref\talt\tlogpvalue",
+            "#chrom\tpos\tref\talt\tpvalue",
             "1\t1\tA\tC\t7.3",
             "X\t1\tA\tC\t7.3",
         ], parser=parsers.standard_gwas_parser, skip_rows=1)
@@ -30,7 +30,7 @@ class TestStandardGwasValidator:
 
     def test_wrong_headers(self):
         reader = readers.IterableReader([
-            "#NOPE\tpos\tref\talt\tlogpvalue",
+            "#NOPE\tpos\tref\talt\tpvalue",
             "1\t1\tA\tC\t7.3"
             "X\t1\tA\tC\t7.3"
         ], parser=parsers.standard_gwas_parser, skip_rows=1)
@@ -40,7 +40,7 @@ class TestStandardGwasValidator:
 
     def test_wrong_datatype(self):
         reader = readers.IterableReader([
-            "#chrom\tpos\tref\talt\tlogpvalue",
+            "#chrom\tpos\tref\talt\tpvalue",
             "1\t1\tA\tC\t7.3"
             "X\t1\tA\tC\tNOPE"
         ], parser=parsers.standard_gwas_parser, skip_rows=1)
@@ -51,7 +51,7 @@ class TestStandardGwasValidator:
     @pytest.mark.skip(reason="Unclear whether this is actually a requirement for PheWeb loaders; revisit")
     def test_wrong_chrom_order(self):
         reader = readers.IterableReader([
-            "#chrom\tpos\tref\talt\tlogpvalue",
+            "#chrom\tpos\tref\talt\tpvalue",
             "2\t1\tA\tC\t7.3"
             "1\t1\tA\tC\t7.3"
         ], parser=parsers.standard_gwas_parser, skip_rows=1)
@@ -61,7 +61,7 @@ class TestStandardGwasValidator:
 
     def test_chroms_not_sorted(self):
         reader = readers.IterableReader([
-            "#chrom\tpos\tref\talt\tlogpvalue",
+            "#chrom\tpos\tref\talt\tpvalue",
             "1\t1\tA\tC\t7.3",
             "X\t1\tA\tC\t7.3",
             "1\t2\tA\tC\t7.3",
@@ -72,7 +72,7 @@ class TestStandardGwasValidator:
 
     def test_positions_not_sorted(self):
         reader = readers.IterableReader([
-            "#chrom\tpos\tref\talt\tlogpvalue",
+            "#chrom\tpos\tref\talt\tpvalue",
             "1\t2\tA\tC\t7.3",
             "1\t1\tA\tC\t7.3",
             "X\t1\tA\tC\t7.3",

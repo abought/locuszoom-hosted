@@ -4,7 +4,8 @@ FROM python:3.6
 
 ENV PYTHONUNBUFFERED 1
 
-RUN apt-get update && apt-get install libmagic-dev
+# libmagic: file format detection
+RUN apt-get update && apt-get install -y libmagic-dev
 
 # Requirements are installed here to ensure they will be cached.
 COPY ./requirements /requirements

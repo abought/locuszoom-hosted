@@ -2,7 +2,8 @@ FROM python:3.6
 
 ENV PYTHONUNBUFFERED 1
 
-RUN apt-get update && apt-get install libmagic-dev
+# libmagic: file format detection
+RUN apt-get update && apt-get install -y libmagic-dev
 
 RUN addgroup -S django \
     && adduser -S -G django django

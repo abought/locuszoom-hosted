@@ -44,9 +44,10 @@ class Gwas(TimeStampedModel):
                                 help_text="A human-readable description, eg DIAGRAM Height GWAS")
 
     # Metadata that the user must fill in when uploading
-    build = models.CharField(max_length=10, choices=constants.GENOME_BUILDS)  # TODO: Make this a db table
+    build = models.CharField(max_length=10, choices=constants.GENOME_BUILDS)
     imputed = models.CharField(max_length=25, blank=True,
-                               # TODO: UI: prefill options to the imputation server default choices
+                               # TODO: This may be too restrictive?
+                               choices=constants.IMPUTATION_PANELS,
                                help_text="If your data was imputed, please specify the reference panel used")
     is_log_pvalue = models.BooleanField(default=True)
 
@@ -61,19 +62,6 @@ class Gwas(TimeStampedModel):
                                      help_text="Internal use only: path to folder of ingested data")
     raw_gwas_file = models.FileField(upload_to=util.get_gwas_raw_fn)  # The original / raw file
     file_sha256 = models.CharField(max_length=64)
-
-    # TODO: Future: tell the server how to parse the raw GWAS file
-    # marker_col_name = models.CharField(default='MarkerName', max_length=25)
-    # pvalue_col = models.CharField(default='P.value', max_length=25)
-    # delimiter = models.CharField(
-    #     max_length=25,
-    #     choices=(
-    #         (r'\t', 'Tab'),
-    #         (',', 'Comma'),
-    #         (' ', 'Space'),
-    #         (r'\s', 'Whitespace')
-    #     )
-    # )
 
     @property
     def file_size(self):
@@ -93,6 +81,10 @@ class Gwas(TimeStampedModel):
         return os.path.join(util.get_study_folder(self, absolute_path=True), 'manhattan.json')
 
     @property
+    def qq_fn(self):
+        return os.path.join(util.get_study_folder(self, absolute_path=True), 'qq.json')
+
+    @property
     def tophits_fn(self):
         # PheWeb pipeline writes a tabixed file that supports region queries
         return os.path.join(util.get_study_folder(self, absolute_path=True), 'tophits.gz')
@@ -100,8 +92,7 @@ class Gwas(TimeStampedModel):
     @property
     def normalized_fn(self):
         """Path to the normalized, tabix-indexed GWAS file"""
-        # TODO: hook; implement real indexed file later
-        return self.raw_gwas_file.name
+        return os.path.join(util.get_study_folder(self, absolute_path=True), 'normalized.gz')
 
 
 class RegionView(TimeStampedModel):
