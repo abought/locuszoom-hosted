@@ -204,6 +204,7 @@ LOGGING = {
             'handlers': ['console', 'sentry'],
             'propagate': False,
         },
+        # FIXME: Add logging config for the app code (eg ingest pipeline)
     },
 }
 

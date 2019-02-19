@@ -1,8 +1,5 @@
-import gzip
 import hashlib
-import json
 import os
-import typing
 import uuid
 
 from django.conf import settings
@@ -16,11 +13,10 @@ from django.utils.http import urlencode
 from django.urls import reverse
 from model_utils.models import TimeStampedModel
 
-from pheweb.load import manhattan
-import pysam
-
 from . import constants
 from . import util
+
+from util.ingest import pipeline
 
 
 User = get_user_model()
@@ -76,23 +72,28 @@ class Gwas(TimeStampedModel):
     #######
     # Tell the upload pipeline where to find/ store each asset
     @property
-    def manhattan_fn(self):
+    def normalized_gwas_path(self):
+        """Path to the normalized, tabix-indexed GWAS file"""
+        return os.path.join(util.get_study_folder(self, absolute_path=True), 'normalized.txt.gz')
+
+    @property
+    def normalized_gwas_log_path(self):
+        """Path to the normalized, tabix-indexed GWAS file"""
+        return os.path.join(util.get_study_folder(self, absolute_path=True), 'normalized.log')
+
+    @property
+    def manhattan_path(self):
         # PheWeb pipeline writes a JSON file that is used in entirety by frontend
         return os.path.join(util.get_study_folder(self, absolute_path=True), 'manhattan.json')
 
     @property
-    def qq_fn(self):
+    def qq_path(self):
         return os.path.join(util.get_study_folder(self, absolute_path=True), 'qq.json')
 
     @property
-    def tophits_fn(self):
-        # PheWeb pipeline writes a tabixed file that supports region queries
+    def tophits_path(self):
+        # PheWeb pipeline writes a tabixed file that supports region queries # TODO: Implement
         return os.path.join(util.get_study_folder(self, absolute_path=True), 'tophits.gz')
-
-    @property
-    def normalized_fn(self):
-        """Path to the normalized, tabix-indexed GWAS file"""
-        return os.path.join(util.get_study_folder(self, absolute_path=True), 'normalized.gz')
 
 
 class RegionView(TimeStampedModel):
@@ -130,15 +131,13 @@ class RegionView(TimeStampedModel):
         return {**extended, **basic}
 
 
-# FIXME: Use the new ingest pipeline code to replace this
 @receiver(signals.post_save, sender=Gwas)
 def analysis_upload_pipeline(sender, instance: Gwas = None, created=None, **kwargs):
     """
     Specify a series of operations to be run on a newly uploaded file, such as integrity verification and
         "interesting region" detection
 
-    - Compute SHA
-    - Find top hit(s)
+    - Compute SHA for the initially uploaded GWAS
     - Write data for a pheweb-style manhattan plot
     :return:
     """
@@ -147,7 +146,7 @@ def analysis_upload_pipeline(sender, instance: Gwas = None, created=None, **kwar
     if not created:
         return
 
-    # We track the SHA of what was uploaded as proof of version, but we transform what was actually stored
+    # Track the SHA of what was uploaded, so user can validate later.
     with instance.raw_gwas_file.open('rb') as f:  # type: ignore
         shasum_256 = hashlib.sha256()
         if f.multiple_chunks():
@@ -157,50 +156,21 @@ def analysis_upload_pipeline(sender, instance: Gwas = None, created=None, **kwar
             shasum_256.update(f.read())
 
     instance.file_sha256 = shasum_256.hexdigest()  # type: ignore
+    instance.save()
 
-    # TODO: Index the normalized file, not raw
-    old_fn = os.path.join(settings.MEDIA_ROOT, instance.raw_gwas_file.name)  # type: ignore
-    new_fn = pysam.tabix_index(old_fn, seq_col=0, start_col=1, end_col=1, line_skip=1)
-    # TODO: These columns are probably not the ideal everywhere
-    instance.raw_gwas_file.name = new_fn  # type: ignore
+    status = pipeline.standard_gwas_pipeline(
+        os.path.join(settings.MEDIA_ROOT, instance.raw_gwas_file.name),
+        instance.normalized_gwas_path,
+        instance.normalized_gwas_log_path,
+        instance.manhattan_path,
+        instance.qq_path,
+    )
 
-    best_chrom: typing.Union[str, None] = None
-    best_pos: typing.Union[int, None] = None
-    best_pvalue = 1
-    # TODO: Pheweb pipeline only supports a limited set of chromosomes:
-    #   https://github.com/statgen/pheweb#3-prepare-your-association-files
-    binner = manhattan.Binner()
-
-    # TODO: Replace this with some sort of top hits per dataset feature
-    with gzip.open(instance.raw_gwas_file.name, 'rb') as all_rows:  # type: ignore
-        next(all_rows)  # FIXME: skip header rows
-        for r in all_rows:
-            chrom, pos, _, _, pval = r.strip().decode().split('\t')  # TODO: Configurable parser later
-            pval = float(pval)
-            pos = int(pos)
-            binner.process_variant({'chrom': chrom, 'pos': pos, 'pval': pval})
-            if pval < best_pvalue:
-                best_chrom = chrom
-                best_pos = pos
-                best_pvalue = pval
-
-    top_hit_view = RegionView(gwas=instance,
-                              label="Top Hit",
-                              chrom=best_chrom,
-                              start=max(best_pos - 100_000, 0),  # type: ignore
-                              end=(best_pos + 100000))  # type: ignore
-    top_hit_view.save()
-    instance.top_hit_view = top_hit_view  # type: ignore
-
-    manhattan_data = binner.get_result()
-    with open(instance.manhattan_fn, 'w') as f:  # type: ignore
-        json.dump(manhattan_data, f)
-
-    # instance.top_hit_view = top_hit_view
-    # TODO: Make these options configurable. These ones are for specific test data from pheweb
-    # TODO: How will we handle cleanup of tabix files when db records are deleted? (eg post_delete listener;
-    #   consider soft deletes)
+    # TODO: Add a field to indicate failures, and consider how/when to clean up files that could not be processed
     # Mark analysis pipeline as having completed successfully
-    instance.pipeline_complete = timezone.now()  # type: ignore
-
-    instance.save()  # type: ignore
+    if status is True:
+        instance.pipeline_complete = timezone.now()  # type: ignore
+        instance.save()  # type: ignore
+    else:
+        # TODO: Mark pipeline completed (failed), and send notification email to the user
+        pass

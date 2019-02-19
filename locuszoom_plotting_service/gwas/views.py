@@ -28,16 +28,14 @@ def gwas_manhattan_json(request, pk):
     """Return the JSON file that internally stores manhattan plot data"""
     # TODO: Convert this to an API endpoint in the future
     gwas = get_object_or_404(lz_models.Gwas, pk=pk)
-    response = FileResponse(open(gwas.manhattan_fn, 'rb'))
+    response = FileResponse(open(gwas.manhattan_path, 'rb'))
     response['Content-Type'] = 'application/json'
     return response
 
 
 class GwasSummary(DetailView):
     """
-    Basic GWAS view. Used to view one specific analysis from one specific dataset
-
-    In the future this might become, say, a manhattan plot with a detail view link (in line with PheWeb)
+    Basic GWAS overview. Shows manhattan plot and other summary info for a dataset.
     """
     template_name = 'gwas/gwas_summary.html'
     queryset = lz_models.Gwas.objects.all()
@@ -48,6 +46,7 @@ class GwasLocus(DetailView):
     A LocusZoom plot associated with the GWAS
 
     In the future this might become, say, a manhattan plot with a detail view link (in line with PheWeb)
+    TODO: Implement permissions/access controls
     """
     template_name = 'gwas/gwas_region.html'
     queryset = lz_models.Gwas.objects.all()  # TODO: Is this the right queryset?

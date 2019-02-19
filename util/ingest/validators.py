@@ -47,7 +47,7 @@ class _GwasValidator:
         # TODO: replace with a sniffer class that simply says "has all columns required"
         return all([
             n_head == 1,
-            tuple(content.lower().split(self._delimiter)) == self._headers
+            tuple(content.lower().strip().split(self._delimiter)) == self._headers
         ])
 
     @helpers.false_on_fail

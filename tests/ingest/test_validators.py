@@ -1,3 +1,5 @@
+import os
+
 import pytest
 
 from util.ingest import validators
@@ -80,3 +82,8 @@ class TestStandardGwasValidator:
 
         is_valid = validators.standard_gwas_validator._validate_contents(reader)
         assert not is_valid
+
+    def test_validates_for_file(self):
+        sample_fn = os.path.join(os.path.dirname(__file__), 'fixtures/gwas.tab')
+        is_valid = validators.standard_gwas_validator.validate(sample_fn)
+        assert is_valid
