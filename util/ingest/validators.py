@@ -10,7 +10,9 @@ from pheweb.utils import chrom_order
 from .loaders import make_reader
 from util.zorp.readers import BaseReader
 
-from . import helpers
+from . import (
+    exceptions, helpers
+)
 
 
 logger = logging.getLogger(__name__)
@@ -22,9 +24,10 @@ class _GwasValidator:
         self._delimiter = delimiter
         self._headers = headers
 
-    @helpers.false_on_fail
+    @helpers.capture_errors
     def validate(self, filename: str) -> bool:
         """Perform all checks for a stored file"""
+        # TODO: should we run all tests, or fail on first? (currently the latter)
         encoding = self._get_encoding(filename)
         reader = make_reader(filename, mimetype=encoding)
         return all([
@@ -35,22 +38,30 @@ class _GwasValidator:
     def _get_encoding(self, filename: str) -> str:
         return magic.from_file(filename, mime=True)
 
-    @helpers.false_on_fail
+    @helpers.capture_errors
     def _validate_mimetype(self, mimetype: str) -> bool:
         """Uploaded either a gzipped file or plain text"""
-        return (mimetype in ['application/gzip', 'application/gzip']) or mimetype.startswith('text/')
+        if (mimetype in ['application/gzip', 'application/gzip']) or mimetype.startswith('text/'):
+            return True
+        else:
+            raise exceptions.ValidationException('Only plaintext or gzipped files are accepted')
 
-    @helpers.false_on_fail
+    @helpers.capture_errors
     def _validate_headers(self, reader) -> bool:
         n_head, content = reader.get_headers()
         # First version: match headers to an expected string + row count
         # TODO: replace with a sniffer class that simply says "has all columns required"
-        return all([
+
+        res = all([
             n_head == 1,
             tuple(content.lower().strip().split(self._delimiter)) == self._headers
         ])
+        if res:
+            return True
+        else:
+            raise exceptions.ValidationException('Header row must match the expected format; see docs for details')
 
-    @helpers.false_on_fail
+    @helpers.capture_errors
     def _validate_data_rows(self, reader) -> bool:
         """Data must be sorted, all values must be readable, and all chroms must be known"""
         # Horked from PheWeb's `load.read_input_file.PhenoReader` class
@@ -60,7 +71,7 @@ class _GwasValidator:
             try:
                 return chrom_order[chrom]
             except KeyError:
-                raise Exception('PheWeb pipeline does not support the specified chromosome')
+                raise exceptions.ValidationException('File contains an unexpected chromosome: {}'.format(chrom))
 
         prev_chrom_index = -1
         prev_pos = -1
@@ -68,20 +79,23 @@ class _GwasValidator:
             chrom_index = _get_chrom_index(cp[0])
             if chrom_index < prev_chrom_index:
                 # Chroms in wrong order for PheWeb- TODO is this relevant to the parts we use?
-                return False
+                raise exceptions.ValidationException('Chromosomes should be sorted lexically')
 
             if chrom_index == prev_chrom_index and cp[1] < prev_pos:
                 # Positions not in correct order for Pheweb to use
-                return False
+                raise exceptions.ValidationException('Positions must be sorted prior to uploading')
 
             prev_chrom_index = chrom_index
             prev_pos = cp[1]
 
         # Must make it through the entire file without parsing errors, with all chroms in order, and find at least
         #   one row of data
-        return prev_pos != -1
+        if prev_pos != -1:
+            return True
+        else:
+            raise exceptions.ValidationException('File must contain at least one row of data')
 
-    @helpers.false_on_fail
+    @helpers.capture_errors
     def _validate_contents(self, reader: BaseReader) -> bool:
         """Validate file contents; useful for unit testing"""
         return all([

@@ -26,7 +26,7 @@ from . import (
 logger = logging.getLogger(__name__)
 
 
-@helpers.false_on_fail
+@helpers.capture_errors
 def standard_gwas_pipeline(
     src_path: str,
     normalized_path: str,
@@ -47,7 +47,7 @@ def standard_gwas_pipeline(
         return False
 
     # For now the writer expects a temp file name, and it creates the .gz version internally # TODO: This is silly
-    tmp_normalized_path = normalized_path.replace('.gz', '.txt')
+    tmp_normalized_path = normalized_path.replace('.txt.gz', '.txt')
     if not processors.normalize_contents(src_path, tmp_normalized_path, normalize_log_path):
         return False
 

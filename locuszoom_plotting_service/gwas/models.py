@@ -1,4 +1,5 @@
 import hashlib
+import logging
 import os
 import uuid
 
@@ -17,6 +18,9 @@ from . import constants
 from . import util
 
 from util.ingest import pipeline
+
+
+logger = logging.getLogger(__name__)
 
 
 User = get_user_model()
@@ -158,19 +162,21 @@ def analysis_upload_pipeline(sender, instance: Gwas = None, created=None, **kwar
     instance.file_sha256 = shasum_256.hexdigest()  # type: ignore
     instance.save()
 
-    status = pipeline.standard_gwas_pipeline(
-        os.path.join(settings.MEDIA_ROOT, instance.raw_gwas_file.name),
-        instance.normalized_gwas_path,
-        instance.normalized_gwas_log_path,
-        instance.manhattan_path,
-        instance.qq_path,
-    )
-
-    # TODO: Add a field to indicate failures, and consider how/when to clean up files that could not be processed
-    # Mark analysis pipeline as having completed successfully
-    if status is True:
+    try:
+        pipeline.standard_gwas_pipeline(
+            os.path.join(settings.MEDIA_ROOT, instance.raw_gwas_file.name),
+            instance.normalized_gwas_path,
+            instance.normalized_gwas_log_path,
+            instance.manhattan_path,
+            instance.qq_path,
+        )
+    except Exception as e:
+        # TODO: Mark pipeline completed (failed), and send notification email to the user
+        # TODO: Add a field to indicate failures, and consider how/when to clean up files that could not be processed
+        logger.exception('Ingestion pipeline failed')
+        raise e
+    else:
+        # Mark analysis pipeline as having completed successfully
+        # TODO: Send a notification email to the user
         instance.pipeline_complete = timezone.now()  # type: ignore
         instance.save()  # type: ignore
-    else:
-        # TODO: Mark pipeline completed (failed), and send notification email to the user
-        pass

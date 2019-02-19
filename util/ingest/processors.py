@@ -5,20 +5,20 @@ import json
 import logging
 import typing as ty
 
-from util.zorp import exceptions
-
 from pheweb.load import (
     manhattan,
     qq,
 )
 
-
+from util.zorp import exceptions as z_exc
+from .exceptions import ManhattanExeption, QQPlotException, UnexpectedIngestException
 from . loaders import make_reader
-
+from . import helpers
 
 logger = logging.getLogger(__name__)
 
 
+@helpers.capture_errors
 def normalize_contents(src_path: str, dest_path: str, log_path: str) -> bool:
     """
     Initial content ingestion: load the file and write variants in a standardized format
@@ -30,32 +30,32 @@ def normalize_contents(src_path: str, dest_path: str, log_path: str) -> bool:
     success = False
     try:
         dest_fn = reader.write(dest_path, make_tabix=True)
-    except exceptions.TooManyBadLinesException:
-        logger.error('ERROR: Too many lines failed to parse; could not load {}'.format(src_path))
-    except Exception:
-        logger.exception('Conversion failed due to unknown error')
+    except z_exc.TooManyBadLinesException as e:
+        raise e
     else:
         success = True
         logger.info('Conversion succeeded! Results written to: {}'.format(dest_fn))
+    finally:
+        # Always write a log entry, no matter what
+        with open(log_path, 'w') as f:
+            for n, reason, _ in reader.errors:
+                f.write('Excluded row {} from output due to parse error: {}\n'.format(n, reason))
 
-    with open(log_path, 'w') as f:
-        for n, reason, _ in reader.errors:
-            f.write('Excluded row {} from output due to parse error: {}\n'.format(n, reason))
-
-        if success:
-            f.write('[success] GWAS file has been converted.\n')
-        else:
-            f.write('[failure] Could not create normalized GWAS file for: {}'.format(src_path))
-            return False
-    return True
+            if success:
+                f.write('[success] GWAS file has been converted.\n')
+                return True
+            else:
+                f.write('[failure] Could not create normalized GWAS file for: {}'.format(src_path))
 
 
+@helpers.capture_errors
 def _pheweb_adapter(reader) -> ty.Iterator[dict]:
     """Formats zorp parsed data into the format expected by pheweb"""
     for row in reader:
         yield {'chrom': row.chrom, 'pos': row.pos, 'pval': row.pvalue}
 
 
+@helpers.capture_errors
 def generate_manhattan(in_filename: str, out_filename: str) -> bool:
     """Generate manhattan plot data for the processed file"""
     reader_adapter = _pheweb_adapter(make_reader(in_filename))
@@ -72,6 +72,7 @@ def generate_manhattan(in_filename: str, out_filename: str) -> bool:
     return True
 
 
+@helpers.capture_errors
 def generate_qq(in_filename: str, out_filename) -> bool:
     """Largely borrowed from PheWeb code (load.qq.make_json_file)"""
     # TODO: Currently the ingest pipeline never stores "af"/"maf" at all, which could affect this calculation
