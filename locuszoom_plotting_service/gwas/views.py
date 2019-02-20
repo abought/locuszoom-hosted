@@ -3,7 +3,7 @@ from django.views.generic import DetailView
 from django.views.generic.edit import CreateView
 
 from django.shortcuts import get_object_or_404, render
-from django.http import FileResponse
+from django.http import FileResponse, HttpResponse
 
 from . import models as lz_models
 
@@ -20,15 +20,43 @@ class GwasCreate(CreateView):
 
     def form_valid(self, form):
         form.instance.user = self.request.user
-        return super().form_valid(form)
+        return super(GwasCreate, self).form_valid(form)
+
+
+# Individual data views
+# TODO: Add permissions checks and tests
+@login_required
+def gwas_summarystats(request, pk):
+    """Return the normalized, annotated summary statistics used to build all plots"""
+    gwas = get_object_or_404(lz_models.Gwas, pk=pk)
+    response = HttpResponse(content=open(gwas.normalized_gwas_path, 'rb'), content_type='application/gzip')
+    response['Content-Disposition'] = 'attachment; filename="{}"'.format('summary_stats.gz')
+    return response
+
+
+@login_required
+def gwas_ingest_log(request, pk):
+    """Return the normalized, annotated summary statistics used to build all plots"""
+    gwas = get_object_or_404(lz_models.Gwas, pk=pk)
+    response = HttpResponse(content=open(gwas.normalized_gwas_log_path, 'rb'))
+    response['Content-Disposition'] = 'attachment; filename="{}"'.format('ingest_log.log')
+    return response
 
 
 @login_required
 def gwas_manhattan_json(request, pk):
-    """Return the JSON file that internally stores manhattan plot data"""
-    # TODO: Convert this to an API endpoint in the future
+    """API endpoint: Return the JSON data that defines a manhattan plot"""
     gwas = get_object_or_404(lz_models.Gwas, pk=pk)
     response = FileResponse(open(gwas.manhattan_path, 'rb'))
+    response['Content-Type'] = 'application/json'
+    return response
+
+
+@login_required
+def gwas_qq_json(request, pk):
+    """API endpoint: Return the JSON data that defines a QQ plot"""
+    gwas = get_object_or_404(lz_models.Gwas, pk=pk)
+    response = FileResponse(open(gwas.qq_path, 'rb'))
     response['Content-Type'] = 'application/json'
     return response
 

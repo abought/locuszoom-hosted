@@ -63,10 +63,6 @@ class Gwas(TimeStampedModel):
     raw_gwas_file = models.FileField(upload_to=util.get_gwas_raw_fn)  # The original / raw file
     file_sha256 = models.CharField(max_length=64)
 
-    @property
-    def file_size(self):
-        return self.raw_gwas_file.size
-
     def get_absolute_url(self):
         return reverse('gwas:overview', kwargs={'pk': self.id})
 

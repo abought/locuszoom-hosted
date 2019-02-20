@@ -20,7 +20,11 @@ def capture_errors(func):
     def wrapper(*args, **kwargs):
         try:
             return func(*args, **kwargs)
+        except exceptions.BaseIngestException:
+            # If we already provide a useful validation message, use that
+            raise
         except Exception:
-            logger.exception('Task failed due to unhandled error')
+            # Any totally unhandled problems get a bland error message and are recorded
+            logger.exception('Task failed due to unexpected error')
             raise exceptions.UnexpectedIngestException
     return wrapper
