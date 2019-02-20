@@ -1,8 +1,13 @@
+import os
+
 from rest_framework import exceptions as drf_exceptions
 from rest_framework import generics
 from rest_framework import renderers as drf_renderers
 
 from locuszoom_plotting_service.gwas import models as lz_models
+
+from util.zorp.readers import TabixReader
+from util.zorp.parsers import standard_gwas_parser
 
 from . import serializers
 
@@ -31,11 +36,20 @@ class GwasRegionView(generics.RetrieveAPIView):
     queryset = lz_models.Gwas.objects.all()
     serializer_class = serializers.GwasFileSerializer
 
-    def get_serializer_context(self):
-        chrom, start, end = self._query_params()
-        return {'chrom': chrom, 'start': start, 'end': end}
+    def get_serializer(self, *args, **kwargs):
+        return super(GwasRegionView, self).get_serializer(*args, many=True, **kwargs)
 
-    def _query_params(self):
+    def get_object(self):
+        gwas = super(GwasRegionView, self).get_object()
+        chrom, start, end = self._query_params()
+
+        if not os.path.isfile(gwas.normalized_gwas_path):
+            raise drf_exceptions.NotFound
+
+        reader = TabixReader(gwas.normalized_gwas_path, parser=standard_gwas_parser)
+        return list(reader.fetch(chrom, start, end))
+
+    def _query_params(self)-> (str, int, int):
         """
         Specific rules for GWAS retrieval
         # TODO: Write tests!
@@ -54,8 +68,8 @@ class GwasRegionView(generics.RetrieveAPIView):
             raise drf_exceptions.ParseError('Must specify "chrom", "start", and "end" as query parameters')
 
         try:
-            start = float(start)
-            end = float(end)
+            start = int(start)
+            end = int(end)
         except ValueError:
             raise drf_exceptions.ParseError('"start" and "end" must be integers')
 
@@ -63,6 +77,7 @@ class GwasRegionView(generics.RetrieveAPIView):
             raise drf_exceptions.ParseError('"end" position must be greater than "start"')
 
         if not (0 <= (end - start) <= 500_000):
+            # TODO: Make max region size configurable
             raise drf_exceptions.ParseError(f'Cannot handle requested region size. Max allowed is {500_000}')
 
         return chrom, start, end
