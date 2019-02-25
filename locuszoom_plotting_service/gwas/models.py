@@ -41,29 +41,40 @@ class Gwas(TimeStampedModel):
     """A single analysis (GWAS results) that may be part of a larger group"""
     owner = models.ForeignKey(User, on_delete=models.SET_NULL, null=True)
     analysis = models.CharField(max_length=100,
-                                help_text="A human-readable description, eg DIAGRAM Height GWAS")
+                                help_text='A human-readable description, eg DIAGRAM Height GWAS')
 
-    is_public = models.BooleanField(default=False, help_text="Is this study visible to everyone?")
+    is_public = models.BooleanField(default=False, help_text='Is this study visible to everyone?')
 
     # Metadata that the user must fill in when uploading
     build = models.CharField(max_length=10, choices=constants.GENOME_BUILDS)
     imputed = models.CharField(max_length=25, blank=True,
                                # TODO: This may be too restrictive?
                                choices=constants.IMPUTATION_PANELS,
-                               help_text="If your data was imputed, please specify the reference panel used")
+                               help_text='If your data was imputed, please specify the reference panel used')
+
+    n_cases = models.PositiveIntegerField(blank=True, null=True, help_text='Number of phenotype cases in sample')
+    n_controls = models.PositiveIntegerField(blank=True, null=True, help_text='Number of phenotype controls in sample')
+
+    # TODO: Change default when we make the upload pipeline generic. Maybe move to different model.
     is_log_pvalue = models.BooleanField(default=True)
 
     # Data to be filled in by upload/ post processing steps # TODO: Add mechanism to track success/failure status
+    # TODO: Get top hit view
     top_hit_view = models.OneToOneField('gwas.RegionView', on_delete=models.SET_NULL, null=True, related_name='+')
-    pipeline_complete = models.DateTimeField(null=True)
+
+    ingest_status = models.IntegerField(choices=constants.INGEST_STATES, default=0,
+                                        help_text='Track progress of data ingestion')  # All-or-nothing!
+    ingest_complete = models.DateTimeField(null=True,
+                                           help_text='When the ingestion pipeline completed (success or failure)')
 
     ########
-    # Below this line: first iteration will be to serve files from local filesystem, rather than database
+    # Below this line: Track info needed to serve data from local files
     pipeline_path = models.CharField(max_length=32,
                                      default=_pipeline_folder,
-                                     help_text="Internal use only: path to folder of ingested data")
+                                     help_text='Internal use only: path to folder of ingested data')
     raw_gwas_file = models.FileField(upload_to=util.get_gwas_raw_fn)  # The original / raw file
-    file_sha256 = models.CharField(max_length=64)
+    file_sha256 = models.CharField(max_length=64,
+                                   help_text='The hash of the original, raw uploaded file')
 
     def get_absolute_url(self):
         return reverse('gwas:overview', kwargs={'pk': self.id})
@@ -80,7 +91,7 @@ class Gwas(TimeStampedModel):
         return self.is_public or (current_user == self.owner)
 
     #######
-    # Tell the upload pipeline where to find/ store each asset
+    # Helpers defining where to find/ store each asset
     @property
     def normalized_gwas_path(self):
         """Path to the normalized, tabix-indexed GWAS file"""
@@ -155,8 +166,9 @@ def analysis_upload_pipeline(sender, instance: Gwas = None, created=None, **kwar
     - Write data for a pheweb-style manhattan plot
     :return:
     """
+    # TODO: Move this to a celery task
     # Only run once when model first created.
-    # This is a safeguard to prevent infinite recursion from re-saves (a downside of using signals)
+    # This is a safeguard to prevent infinite recursion from re-saves
     if not created:
         return
 
@@ -181,12 +193,14 @@ def analysis_upload_pipeline(sender, instance: Gwas = None, created=None, **kwar
             instance.qq_path,
         )
     except Exception as e:
-        # TODO: Mark pipeline completed (failed), and send notification email to the user
-        # TODO: Add a field to indicate failures, and consider how/when to clean up files that could not be processed
-        logger.exception('Ingestion pipeline failed')
+        logger.exception('Ingestion pipeline failed for gwas id: {}'.format(instance.pk))
+        instance.ingest_status = 1
         raise e
     else:
         # Mark analysis pipeline as having completed successfully
-        # TODO: Send a notification email to the user
-        instance.pipeline_complete = timezone.now()  # type: ignore
+        instance.ingest_status = 2  # TODO: Use enum
+    finally:
+        instance.ingest_complete = timezone.now()  # type: ignore
         instance.save()  # type: ignore
+
+    # TODO: Send a notification email to the user with final pipeline status (succeeded or failed)

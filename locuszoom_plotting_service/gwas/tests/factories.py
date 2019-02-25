@@ -31,7 +31,7 @@ class GwasFactory(factory.DjangoModelFactory):
 
     is_public = False
 
-    pipeline_complete = None
+    ingest_complete = None
 
     raw_gwas_file = factory.django.FileField(from_func=lambda: SimpleUploadedFile('fictional.txt', content=''))
 

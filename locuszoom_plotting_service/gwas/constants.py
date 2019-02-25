@@ -23,3 +23,9 @@ PHENO_CLASSIFICATIONS = (
     ('PC9', 'Vanderbilt PheCode (ICD-9)'),
     ('PC10', 'Vanderbilt PheCode (ICD-10)'),
 )
+
+INGEST_STATES = (
+    (0, 'PENDING'),
+    (1, 'FAILED'),
+    (2, 'SUCCESS')
+)

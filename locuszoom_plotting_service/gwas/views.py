@@ -44,9 +44,10 @@ def home(request):
 
 
 class GwasCreate(CreateView):
+    """Render a simple HTML form"""
     # TODO: Rework upload UI later
     model = lz_models.Gwas
-    fields = ['analysis', 'is_public', 'build', 'imputed', 'raw_gwas_file']
+    fields = ['analysis', 'is_public', 'build', 'imputed', 'n_cases', 'n_controls', 'raw_gwas_file']
     template_name = 'gwas/upload.html'
 
     def form_valid(self, form):

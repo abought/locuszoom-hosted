@@ -41,7 +41,7 @@ class GwasListView(generics.ListAPIView):
 class GwasDetailView(generics.RetrieveAPIView):
     """Metadata describing one particular uploaded GWAS"""
     permission_classes = (drf_permissions.IsAuthenticated, permissions.GwasPermission)
-    queryset = lz_models.Gwas.objects.filter(pipeline_complete__isnull=False).all()
+    queryset = lz_models.Gwas.objects.filter(ingest_complete__isnull=False).all()
     serializer_class = serializers.GwasSerializer
 
 

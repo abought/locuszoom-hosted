@@ -69,7 +69,7 @@
 {% block content %}
   <h1>Analysis summary for: <em>{{ object.analysis }}</em></h1>
   {% if object.is_public %}<span class="badge badge-primary">Public</span>{% endif %}
-  {% if object.pipeline_complete %}
+  {% if object.ingest_complete %}
     <div class="row">
       <div class="col-md-8"></div>
       <div class="col-md-4">
@@ -117,7 +117,7 @@
     window.pheno = '';  // FIXME: Pheno.js hardcodes a specific link structure that will be wrong for this site
 
 
-    {% if object.pipeline_complete %}
+    {% if object.ingest_complete %}
       window.addEventListener('load', function () {
         fetch('{% url 'gwas:manhattan-json' object.id %}')
           .then(resp => resp.json())
