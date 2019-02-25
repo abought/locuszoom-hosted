@@ -8,6 +8,7 @@
 
 {%  block content %}
   <h1>LocusZoom Plot for {{ object.analysis }}</h1>
+  {% if object.is_public %}<span class="badge badge-primary">Public</span>{% endif %}
   <div class="row">
     <div class="col-md-12">
       <div>

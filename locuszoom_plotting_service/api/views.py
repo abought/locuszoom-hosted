@@ -2,6 +2,7 @@ import os
 
 from django.conf import settings
 from rest_framework import exceptions as drf_exceptions
+from rest_framework import permissions as drf_permissions
 from rest_framework import generics
 from rest_framework import renderers as drf_renderers
 
@@ -10,19 +11,36 @@ from locuszoom_plotting_service.gwas import models as lz_models
 from util.zorp.readers import TabixReader
 from util.zorp.parsers import standard_gwas_parser
 
-from . import serializers
+from . import (
+    permissions,
+    serializers
+)
 
 
 class GwasListView(generics.ListAPIView):
-    """List all known uploaded GWAS analyses"""
-    # TODO: No current support for file upload via API endpoint
+    """
+    List all known uploaded GWAS analyses
+        (public data sets, plus any private to just this user)
+
+        TODO: Consider moving upload support into this endpoint in the future
+    """
     queryset = lz_models.Gwas.objects.all()
     serializer_class = serializers.GwasSerializer
+    permission_classes = (drf_permissions.IsAuthenticated, permissions.GwasPermission)
     ordering = ('id',)
+
+    def get_queryset(self):
+        queryset = super(GwasListView, self).get_queryset()
+        modified = queryset.filter(is_public=True)
+        # TODO: Simplify clause (is whole thing necessary?)
+        if self.request.user.is_authenticated:
+            modified |= queryset.filter(owner=self.request.user)
+        return modified
 
 
 class GwasDetailView(generics.RetrieveAPIView):
     """Metadata describing one particular uploaded GWAS"""
+    permission_classes = (drf_permissions.IsAuthenticated, permissions.GwasPermission)
     queryset = lz_models.Gwas.objects.filter(pipeline_complete__isnull=False).all()
     serializer_class = serializers.GwasSerializer
 
@@ -36,6 +54,7 @@ class GwasRegionView(generics.RetrieveAPIView):
     filter_backends: list = []
     queryset = lz_models.Gwas.objects.all()
     serializer_class = serializers.GwasFileSerializer
+    permission_classes = (drf_permissions.IsAuthenticated, permissions.GwasPermission)
 
     def get_serializer(self, *args, **kwargs):
         """Unique scenario: a single model that returns a list of records"""

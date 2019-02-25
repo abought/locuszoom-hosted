@@ -127,9 +127,9 @@ class RegionView(TimeStampedModel):
     # Additional arbitrary params associated with the page- URL query params
     options = JSONField(null=True, blank=True)  # TODO: Decouple front and backend as requirements emerge
 
-    def can_view(self):
+    def can_view(self, current_user):
         """View permissions are solely determined by the underlying study"""
-        return self.gwas.can_view()
+        return self.gwas.can_view(current_user)
 
     def get_absolute_url(self):
         """A region view is just a LocusZoom plot with some specific options"""

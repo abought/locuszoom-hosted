@@ -46,11 +46,11 @@ def home(request):
 class GwasCreate(CreateView):
     # TODO: Rework upload UI later
     model = lz_models.Gwas
-    fields = ['analysis', 'build', 'imputed', 'raw_gwas_file']
+    fields = ['analysis', 'is_public', 'build', 'imputed', 'raw_gwas_file']
     template_name = 'gwas/upload.html'
 
     def form_valid(self, form):
-        form.instance.user = self.request.user
+        form.instance.owner = self.request.user
         return super(GwasCreate, self).form_valid(form)
 
 
