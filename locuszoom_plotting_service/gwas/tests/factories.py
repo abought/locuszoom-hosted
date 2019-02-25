@@ -17,16 +17,24 @@ def choose_imputation_panel() -> str:
 
 
 class GwasFactory(factory.DjangoModelFactory):
-    user = factory.SubFactory(UserFactory)
+    owner = factory.SubFactory(UserFactory)
     analysis = factory.Faker('word')
 
     build = factory.LazyFunction(choose_genome_build)
     imputed = factory.LazyFunction(choose_imputation_panel)
     is_log_pvalue = False
 
-    raw_gwas_file = factory.django.FileField(
-        from_path=os.path.join(os.path.dirname(__file__), 'fixtures/placeholder.txt')
-    )
+    is_public = False
+
+    pipeline_complete = None
+
+    raw_gwas_file = None
 
     class Meta:
         model = Gwas
+
+    class Params:
+        has_file = factory.Trait(
+            raw_gwas_file=factory.django.FileField(
+                from_path=os.path.join(os.path.dirname(__file__), 'fixtures/placeholder.txt'))
+        )

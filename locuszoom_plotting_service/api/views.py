@@ -1,5 +1,6 @@
 import os
 
+from django.conf import settings
 from rest_framework import exceptions as drf_exceptions
 from rest_framework import generics
 from rest_framework import renderers as drf_renderers
@@ -37,6 +38,7 @@ class GwasRegionView(generics.RetrieveAPIView):
     serializer_class = serializers.GwasFileSerializer
 
     def get_serializer(self, *args, **kwargs):
+        """Unique scenario: a single model that returns a list of records"""
         return super(GwasRegionView, self).get_serializer(*args, many=True, **kwargs)
 
     def get_object(self):
@@ -76,8 +78,7 @@ class GwasRegionView(generics.RetrieveAPIView):
         if end <= start:
             raise drf_exceptions.ParseError('"end" position must be greater than "start"')
 
-        if not (0 <= (end - start) <= 500_000):
-            # TODO: Make max region size configurable
+        if not (0 <= (end - start) <= settings.LZ_MAX_REGION_SIZE):
             raise drf_exceptions.ParseError(f'Cannot handle requested region size. Max allowed is {500_000}')
 
         return chrom, start, end

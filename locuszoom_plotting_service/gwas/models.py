@@ -39,9 +39,11 @@ def _pipeline_folder():
 
 class Gwas(TimeStampedModel):
     """A single analysis (GWAS results) that may be part of a larger group"""
-    user = models.ForeignKey(User, on_delete=models.SET_NULL, null=True)
+    owner = models.ForeignKey(User, on_delete=models.SET_NULL, null=True)
     analysis = models.CharField(max_length=100,
                                 help_text="A human-readable description, eg DIAGRAM Height GWAS")
+
+    is_public = models.BooleanField(default=False, help_text="Is this study visible to everyone?")
 
     # Metadata that the user must fill in when uploading
     build = models.CharField(max_length=10, choices=constants.GENOME_BUILDS)
@@ -51,7 +53,7 @@ class Gwas(TimeStampedModel):
                                help_text="If your data was imputed, please specify the reference panel used")
     is_log_pvalue = models.BooleanField(default=True)
 
-    # Data to be filled in by upload/ post processing steps
+    # Data to be filled in by upload/ post processing steps # TODO: Add mechanism to track success/failure status
     top_hit_view = models.OneToOneField('gwas.RegionView', on_delete=models.SET_NULL, null=True, related_name='+')
     pipeline_complete = models.DateTimeField(null=True)
 
@@ -68,6 +70,14 @@ class Gwas(TimeStampedModel):
 
     def __str__(self):
         return self.analysis
+
+    def can_view(self, current_user):
+        """
+        # FIXME: This is a simplest-possible permissions model; revise as app grows in complexity.
+        :param request:
+        :return:
+        """
+        return self.is_public or (current_user == self.owner)
 
     #######
     # Tell the upload pipeline where to find/ store each asset
@@ -116,6 +126,10 @@ class RegionView(TimeStampedModel):
 
     # Additional arbitrary params associated with the page- URL query params
     options = JSONField(null=True, blank=True)  # TODO: Decouple front and backend as requirements emerge
+
+    def can_view(self):
+        """View permissions are solely determined by the underlying study"""
+        return self.gwas.can_view()
 
     def get_absolute_url(self):
         """A region view is just a LocusZoom plot with some specific options"""

@@ -289,3 +289,5 @@ REST_FRAMEWORK = {
     'DEFAULT_VERSION': 'v1',
     'DEFAULT_VERSIONING_CLASS': 'rest_framework.versioning.NamespaceVersioning'
 }
+
+LZ_MAX_REGION_SIZE = 500_000

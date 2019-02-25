@@ -2,7 +2,9 @@ import os
 
 import pytest
 
-from util.ingest import validators
+from util.ingest import (
+    exceptions as val_exc, validators
+)
 
 from util.zorp import (
     parsers, readers
@@ -37,8 +39,8 @@ class TestStandardGwasValidator:
             "X\t1\tA\tC\t7.3"
         ], parser=parsers.standard_gwas_parser, skip_rows=1)
 
-        is_valid = validators.standard_gwas_validator._validate_contents(reader)
-        assert not is_valid
+        with pytest.raises(val_exc.ValidationException):
+            validators.standard_gwas_validator._validate_contents(reader)
 
     def test_wrong_datatype(self):
         reader = readers.IterableReader([
@@ -47,8 +49,8 @@ class TestStandardGwasValidator:
             "X\t1\tA\tC\tNOPE"
         ], parser=parsers.standard_gwas_parser, skip_rows=1)
 
-        is_valid = validators.standard_gwas_validator._validate_contents(reader)
-        assert not is_valid
+        with pytest.raises(Exception):
+            validators.standard_gwas_validator._validate_contents(reader)
 
     @pytest.mark.skip(reason="Unclear whether this is actually a requirement for PheWeb loaders; revisit")
     def test_wrong_chrom_order(self):
@@ -58,8 +60,8 @@ class TestStandardGwasValidator:
             "1\t1\tA\tC\t7.3"
         ], parser=parsers.standard_gwas_parser, skip_rows=1)
 
-        is_valid = validators.standard_gwas_validator._validate_contents(reader)
-        assert not is_valid
+        with pytest.raises(val_exc.ValidationException):
+            validators.standard_gwas_validator._validate_contents(reader)
 
     def test_chroms_not_sorted(self):
         reader = readers.IterableReader([
@@ -69,8 +71,8 @@ class TestStandardGwasValidator:
             "1\t2\tA\tC\t7.3",
         ], parser=parsers.standard_gwas_parser, skip_rows=1)
 
-        is_valid = validators.standard_gwas_validator._validate_contents(reader)
-        assert not is_valid
+        with pytest.raises(val_exc.ValidationException):
+            validators.standard_gwas_validator._validate_contents(reader)
 
     def test_positions_not_sorted(self):
         reader = readers.IterableReader([
@@ -80,8 +82,8 @@ class TestStandardGwasValidator:
             "X\t1\tA\tC\t7.3",
         ], parser=parsers.standard_gwas_parser, skip_rows=1)
 
-        is_valid = validators.standard_gwas_validator._validate_contents(reader)
-        assert not is_valid
+        with pytest.raises(val_exc.ValidationException):
+            validators.standard_gwas_validator._validate_contents(reader)
 
     def test_validates_for_file(self):
         sample_fn = os.path.join(os.path.dirname(__file__), 'fixtures/gwas.tab')

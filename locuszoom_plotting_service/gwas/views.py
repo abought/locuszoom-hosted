@@ -1,11 +1,42 @@
-from django.contrib.auth.decorators import login_required
+"""(mostly) Template-based front end views"""
+
+import os
+
+from django.contrib.auth.mixins import LoginRequiredMixin
 from django.views.generic import DetailView
+from django.views.generic.base import View
+from django.views.generic.detail import SingleObjectMixin
 from django.views.generic.edit import CreateView
 
-from django.shortcuts import get_object_or_404, render
-from django.http import FileResponse, HttpResponse
+from django.shortcuts import render
+from django.http import FileResponse, HttpResponseBadRequest
 
 from . import models as lz_models
+from . import permissions as lz_permissions
+
+
+class BaseFileView(View, SingleObjectMixin):
+    """
+    Base class that serves up a file associated with a GWAS. This centralizes the logic in one place in case we
+    change the storage location in the future. Supports serving as JSON (like an API) or as download/attachment.
+    """
+    queryset = lz_models.Gwas.objects.all()
+
+    path_arg: str = None
+    content_type: str = None
+    download_name: str = None
+
+    def get(self, request, *args, **kwargs):
+        gwas = self.get_object()
+
+        filename = getattr(gwas, self.path_arg)
+        if not os.path.isfile(filename):
+            return HttpResponseBadRequest(content={'error': 'File not found'})
+
+        response = FileResponse(open(filename, 'rb'), content_type=self.content_type)
+        if self.download_name:
+            response['Content-Disposition'] = 'attachment; filename="{}"'.format(self.download_name)
+        return response
 
 
 def home(request):
@@ -23,45 +54,32 @@ class GwasCreate(CreateView):
         return super(GwasCreate, self).form_valid(form)
 
 
-# Individual data views
-# TODO: Add permissions checks and tests
-@login_required
-def gwas_summarystats(request, pk):
-    """Return the normalized, annotated summary statistics used to build all plots"""
-    gwas = get_object_or_404(lz_models.Gwas, pk=pk)
-    response = HttpResponse(content=open(gwas.normalized_gwas_path, 'rb'), content_type='application/gzip')
-    response['Content-Disposition'] = 'attachment; filename="{}"'.format('summary_stats.gz')
-    return response
+#######
+# Data/download views, including raw JSON files that don't match the API design.
+class GwasSummaryStats(LoginRequiredMixin, lz_permissions.GwasAccessPermission, BaseFileView):
+    path_arg = 'normalized_gwas_path'
+    content_type = 'application/gzip'
+    download_name = 'summary_stats.gz'
 
 
-@login_required
-def gwas_ingest_log(request, pk):
-    """Return the normalized, annotated summary statistics used to build all plots"""
-    gwas = get_object_or_404(lz_models.Gwas, pk=pk)
-    response = HttpResponse(content=open(gwas.normalized_gwas_log_path, 'rb'))
-    response['Content-Disposition'] = 'attachment; filename="{}"'.format('ingest_log.log')
-    return response
+class GwasIngestLog(LoginRequiredMixin, lz_permissions.GwasAccessPermission, BaseFileView):
+    path_arg = 'normalized_gwas_log_path'
+    download_name = 'ingest_log.log'
 
 
-@login_required
-def gwas_manhattan_json(request, pk):
-    """API endpoint: Return the JSON data that defines a manhattan plot"""
-    gwas = get_object_or_404(lz_models.Gwas, pk=pk)
-    response = FileResponse(open(gwas.manhattan_path, 'rb'))
-    response['Content-Type'] = 'application/json'
-    return response
+class GwasManhattanJson(LoginRequiredMixin, lz_permissions.GwasAccessPermission, BaseFileView):
+    path_arg = 'manhattan_path'
+    content_type = 'application/json'
 
 
-@login_required
-def gwas_qq_json(request, pk):
-    """API endpoint: Return the JSON data that defines a QQ plot"""
-    gwas = get_object_or_404(lz_models.Gwas, pk=pk)
-    response = FileResponse(open(gwas.qq_path, 'rb'))
-    response['Content-Type'] = 'application/json'
-    return response
+class GwasQQJson(LoginRequiredMixin, lz_permissions.GwasAccessPermission, BaseFileView):
+    path_arg = 'qq_path'
+    content_type = 'application/json'
 
 
-class GwasSummary(DetailView):
+#######
+# HTML views
+class GwasSummary(LoginRequiredMixin, lz_permissions.GwasAccessPermission, DetailView):
     """
     Basic GWAS overview. Shows manhattan plot and other summary info for a dataset.
     """
@@ -69,12 +87,11 @@ class GwasSummary(DetailView):
     queryset = lz_models.Gwas.objects.all()
 
 
-class GwasLocus(DetailView):
+class GwasLocus(LoginRequiredMixin, lz_permissions.GwasAccessPermission, DetailView):
     """
-    A LocusZoom plot associated with the GWAS
+    A LocusZoom plot associated with one specific GWAS region
 
-    In the future this might become, say, a manhattan plot with a detail view link (in line with PheWeb)
-    TODO: Implement permissions/access controls
+    The region is actually specified as query params; we will need a mechanism to define a "Default region" for bare URLs
     """
     template_name = 'gwas/gwas_region.html'
-    queryset = lz_models.Gwas.objects.all()  # TODO: Is this the right queryset?
+    queryset = lz_models.Gwas.objects.all()  # TODO: Is this the right queryset? Do any filters apply?
