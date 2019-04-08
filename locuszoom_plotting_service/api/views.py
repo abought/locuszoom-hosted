@@ -25,7 +25,7 @@ class GwasListView(generics.ListAPIView):
 
         TODO: Consider moving upload support into this endpoint in the future
     """
-    queryset = lz_models.Gwas.objects.all()
+    queryset = lz_models.Gwas.objects.filter(ingest_status=2)
     serializer_class = serializers.GwasSerializer
     permission_classes = (drf_permissions.IsAuthenticated, permissions.GwasPermission)
     ordering = ('id',)
@@ -33,7 +33,6 @@ class GwasListView(generics.ListAPIView):
     def get_queryset(self):
         queryset = super(GwasListView, self).get_queryset()
         modified = queryset.filter(is_public=True)
-        # TODO: Simplify clause (is whole thing necessary?)
         if self.request.user.is_authenticated:
             modified |= queryset.filter(owner=self.request.user)
         return modified
