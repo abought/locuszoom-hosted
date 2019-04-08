@@ -1,15 +1,10 @@
-import hashlib
 import logging
 import os
 import uuid
 
-from django.conf import settings
 from django.contrib.auth import get_user_model
 from django.contrib.postgres.fields import JSONField
 from django.db import models
-from django.db.models import signals
-from django.dispatch import receiver
-from django.utils import timezone
 from django.utils.http import urlencode
 from django.urls import reverse
 from model_utils.models import TimeStampedModel
@@ -17,11 +12,7 @@ from model_utils.models import TimeStampedModel
 from . import constants
 from . import util
 
-from util.ingest import pipeline
-
-
 logger = logging.getLogger(__name__)
-
 
 User = get_user_model()
 
@@ -157,52 +148,3 @@ class RegionView(TimeStampedModel):
         extended = self.options or {}
         return {**extended, **basic}
 
-
-@receiver(signals.post_save, sender=Gwas)
-def analysis_upload_pipeline(sender, instance: Gwas = None, created=None, **kwargs):
-    """
-    Specify a series of operations to be run on a newly uploaded file, such as integrity verification and
-        "interesting region" detection
-
-    - Compute SHA for the initially uploaded GWAS
-    - Write data for a pheweb-style manhattan plot
-    :return:
-    """
-    # TODO: Move this to a celery task
-    # Only run once when model first created.
-    # This is a safeguard to prevent infinite recursion from re-saves
-    if not created or not instance:
-        return
-
-    # Track the SHA of what was uploaded, so user can validate later.
-    with instance.raw_gwas_file.open('rb') as f:
-        shasum_256 = hashlib.sha256()
-        if f.multiple_chunks():
-            for chunk in f.chunks():
-                shasum_256.update(chunk)
-        else:
-            shasum_256.update(f.read())
-
-    instance.file_sha256 = shasum_256.hexdigest()
-    instance.save()
-
-    try:
-        pipeline.standard_gwas_pipeline(
-            os.path.join(settings.MEDIA_ROOT, instance.raw_gwas_file.name),
-            instance.normalized_gwas_path,
-            instance.normalized_gwas_log_path,
-            instance.manhattan_path,
-            instance.qq_path,
-        )
-    except Exception as e:
-        logger.exception('Ingestion pipeline failed for gwas id: {}'.format(instance.pk))
-        instance.ingest_status = 1
-        raise e
-    else:
-        # Mark analysis pipeline as having completed successfully
-        instance.ingest_status = 2  # TODO: Use enum
-    finally:
-        instance.ingest_complete = timezone.now()
-        instance.save()
-
-    # TODO: Send a notification email to the user with final pipeline status (succeeded or failed)

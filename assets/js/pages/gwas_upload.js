@@ -14,7 +14,7 @@ const MAX_UPLOAD_SIZE = 1048576 * 500; // 500 MiB
 const MISSING_VALUES = ['', '.', 'NA', 'N/A', 'n/a', 'nan', '-nan', 'NaN', '-NaN', 'null', 'NULL'];
 
 // TODO: make the validation check smarter and more maintainable
-const EXPECTED_HEADERS = ['chrom', 'pos', 'ref', 'alt', 'pvalue'];
+const EXPECTED_HEADERS = ['#chrom', 'pos', 'ref', 'alt', 'pvalue'];
 
 class BaseReader {
     constructor(blob) {
