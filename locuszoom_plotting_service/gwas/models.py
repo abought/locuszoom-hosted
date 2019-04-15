@@ -46,8 +46,8 @@ class Gwas(TimeStampedModel):
     n_cases = models.PositiveIntegerField(blank=True, null=True, help_text='Number of phenotype cases in sample')
     n_controls = models.PositiveIntegerField(blank=True, null=True, help_text='Number of phenotype controls in sample')
 
-    # TODO: Change default when we make the upload pipeline generic. Maybe move to different model.
-    is_log_pvalue = models.BooleanField(default=True)
+    parser_options = JSONField(null=False, blank=False, default={},  # Uploads must tell us how to parse
+                               help_text='Parser options (zorp-compatible parser kwarg names)')
 
     # Data to be filled in by upload/ post processing steps # TODO: Add mechanism to track success/failure status
     # TODO: Get top hit view

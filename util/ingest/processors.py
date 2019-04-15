@@ -10,22 +10,27 @@ from pheweb.load import (
     qq,
 )
 
-from util.zorp import exceptions as z_exc
+from zorp import (
+    exceptions as z_exc,
+    parsers,
+    readers,
+    sniffers
+)
 # from .exceptions import ManhattanExeption, QQPlotException, UnexpectedIngestException
-from . loaders import make_reader
 from . import helpers
 
 logger = logging.getLogger(__name__)
 
 
 @helpers.capture_errors
-def normalize_contents(src_path: str, dest_path: str, log_path: str) -> bool:
+def normalize_contents(src_path: str, parser_options: dict, dest_path: str, log_path: str) -> bool:
     """
     Initial content ingestion: load the file and write variants in a standardized format
 
     This routine will deliberately exclude lines that could not be handled in a reliable fashion, such as pval=NA
     """
-    reader = make_reader(src_path)
+    parser = parsers.GenericGwasLineParser(**parser_options)
+    reader = sniffers.guess_gwas(src_path, parser=parser)
 
     success = False
     try:
@@ -58,7 +63,7 @@ def _pheweb_adapter(reader) -> ty.Iterator[dict]:
 @helpers.capture_errors
 def generate_manhattan(in_filename: str, out_filename: str) -> bool:
     """Generate manhattan plot data for the processed file"""
-    reader = make_reader(in_filename).add_filter("pvalue", lambda v, row: v is not None)
+    reader = readers.standard_gwas_reader(in_filename).add_filter("log_pvalue", lambda v, row: v is not None)
     reader_adapter = _pheweb_adapter(reader)
 
     binner = manhattan.Binner()
@@ -79,7 +84,7 @@ def generate_qq(in_filename: str, out_filename) -> bool:
     # TODO: Currently the ingest pipeline never stores "af"/"maf" at all, which could affect this calculation
     # TODO: This step appears to load ALL data into memory (list on generator). This could be a memory hog; not sure if
     #   there is a way around it as it seems to rely on sorting values
-    reader = make_reader(in_filename).add_filter("pvalue", lambda v, row: v is not None)
+    reader = readers.standard_gwas_reader(in_filename).add_filter("log_pvalue", lambda v, row: v is not None)
     reader_adapter = _pheweb_adapter(reader)
 
     # TODO: Pheweb QQ code benefits from being passed { num_samples: n }, from metadata stored outside the

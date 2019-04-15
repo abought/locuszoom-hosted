@@ -29,6 +29,7 @@ logger = logging.getLogger(__name__)
 @helpers.capture_errors
 def standard_gwas_pipeline(
     src_path: str,
+    parser_options: dict,  # as zorp parser kwargs
     normalized_path: str,
     normalize_log_path: str,
     manhattan_path: str,
@@ -42,13 +43,13 @@ def standard_gwas_pipeline(
     # - qq.json - Make QQ plot json file
 
     # TODO: Better communicate which step of the pipeline failed
-    if not validators.standard_gwas_validator.validate(src_path):
+    if not validators.standard_gwas_validator.validate(src_path, parser_options):
         logger.info("Could not load GWAS '{}' because contents failed to validate".format(src_path))
         return False
 
     # For now the writer expects a temp file name, and it creates the .gz version internally # TODO: This is silly
     tmp_normalized_path = normalized_path.replace('.txt.gz', '.txt')
-    if not processors.normalize_contents(src_path, tmp_normalized_path, normalize_log_path):
+    if not processors.normalize_contents(src_path, parser_options, tmp_normalized_path, normalize_log_path):
         return False
 
     return all([

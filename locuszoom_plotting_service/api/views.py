@@ -9,8 +9,8 @@ from rest_framework import renderers as drf_renderers
 
 from locuszoom_plotting_service.gwas import models as lz_models
 
-from util.zorp.readers import TabixReader
-from util.zorp.parsers import standard_gwas_parser
+from zorp.readers import TabixReader
+from zorp.parsers import standard_gwas_parser
 
 from . import (
     permissions,

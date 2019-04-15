@@ -14,8 +14,8 @@ class TestListviewPermissions(APITestCase):
         cls.user_other = user2 = UserFactory()
 
         # Create fake studies with no data, that will render anyway
-        cls.study_private = GwasFactory(owner=user1, is_public=False)
-        cls.study_public = GwasFactory(owner=user2, is_public=True)
+        cls.study_private = GwasFactory(owner=user1, is_public=False, has_completed=True)
+        cls.study_public = GwasFactory(owner=user2, is_public=True, has_completed=True)
 
     def tearDown(self):
         self.client.logout()

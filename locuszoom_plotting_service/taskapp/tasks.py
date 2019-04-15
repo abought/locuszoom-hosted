@@ -37,6 +37,7 @@ def analysis_upload_pipeline(self, gwas_id: int):
     try:
         pipeline.standard_gwas_pipeline(
             os.path.join(settings.MEDIA_ROOT, instance.raw_gwas_file.name),
+            instance.parser_options,
             instance.normalized_gwas_path,
             instance.normalized_gwas_log_path,
             instance.manhattan_path,
