@@ -1,9 +1,9 @@
-from datetime import datetime
 import os
 import random
 
 from django.core.files.uploadedfile import SimpleUploadedFile
 from django.db.models import signals
+from django.utils import timezone
 import factory
 
 from locuszoom_plotting_service.users.tests.factories import UserFactory
@@ -55,6 +55,6 @@ class GwasFactory(factory.DjangoModelFactory):
         )
 
         has_completed = factory.Trait(  # Marks pipeline complete (without actually running it)
-            ingest_complete = datetime.utcnow(),
+            ingest_complete = timezone.now(),
             ingest_status = 2
         )

@@ -50,7 +50,7 @@ def home(request):
 class GwasCreate(LoginRequiredMixin, CreateView):
     """Render a simple HTML form"""
     model = lz_models.Gwas
-    fields = ['analysis', 'is_public', 'build', 'imputed', 'n_cases', 'n_controls', 'raw_gwas_file']
+    fields = ['analysis', 'is_public', 'build', 'imputed', 'n_cases', 'n_controls', 'parser_options', 'raw_gwas_file']
     template_name = 'gwas/upload.html'
 
     def form_valid(self, form):
