@@ -49,7 +49,7 @@ class Gwas(TimeStampedModel):
     parser_options = JSONField(null=False, blank=False, default={},  # Uploads must tell us how to parse
                                help_text='Parser options (zorp-compatible parser kwarg names)')
 
-    # Data to be filled in by upload/ post processing steps # TODO: Add mechanism to track success/failure status
+    # Data to be filled in by upload/ post processing steps
     # TODO: Get top hit view
     top_hit_view = models.OneToOneField('gwas.RegionView', on_delete=models.SET_NULL, null=True, related_name='+')
 

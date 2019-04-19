@@ -86,7 +86,6 @@ class GzipReader extends BaseReader {
 
 function makeReader(filename, blob) {
     // Delegate based solely on file extension. No single extension for text file formats, or way to detect, eg savvy
-    // TODO: can we use magic numbers for, eg, gzip?
     const ext = filename.split('.').pop();
     if (['gz', 'bgz'].includes(ext)) {
         return new GzipReader(blob);
@@ -114,13 +113,6 @@ const modal = new Vue({
 window.modal = modal;
 const fileField = document.getElementById('id_raw_gwas_file');
 modal.$on('has_options', function (parser_options) { // Close with options selected
-    // FIXME: lz-tabix has trouble finding headers without a tabix index; need to carry forward the rules from zorp
-    // FIXME: 0 v 1 based indexing in parsers leads to much hacky conversion. Standardize.
-    // ZORP parsers use (and store) 1-based indices, even though internally the guesser uses 0-based indices.
-    Object.keys(parser_options).forEach(k => {
-        const v = parser_options[k];
-        parser_options[k] = (typeof v === 'number') ? v + 1 : v;
-    });
     document.getElementById('id_parser_options').value = JSON.stringify(parser_options);
     // Once options are received, mark form as valid
     fileField.setCustomValidity('');
@@ -128,7 +120,6 @@ modal.$on('has_options', function (parser_options) { // Close with options selec
 
 modal.$on('close', function() {
     modal.show_modal = false;  // Legacy of half-in, half-out vue usage
-    // TODO: handle case where file is selected but user exits modal without picking options
 });
 
 fileField.addEventListener('click', function(e) {

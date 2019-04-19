@@ -114,7 +114,7 @@
     window.model = {
       // TODO: make sure more variants have ref/alt information
       urlprefix: '{% url 'gwas:region' gwas.id %}',
-      tooltip_underscoretemplate: '<b><%= d.chrom %>:<%= d.pos.toLocaleString() %> <%= d.ref %> / <%= d.alt %></b><br>'
+      tooltip_underscoretemplate: '<b><%= d.chrom %>:<%= d.pos.toLocaleString() %></b><br>'
     };
     window.pheno = '';  // FIXME: Pheno.js hardcodes a specific link structure that will be wrong for this site
 

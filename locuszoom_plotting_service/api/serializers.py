@@ -23,10 +23,10 @@ class GwasFileSerializer(drf_serializers.Serializer):
     It expects a parsed row of data (namedtuple as output by zorp)
     """
     # Field names selected to match original portaldev api server
-    chromosome = drf_serializers.CharField(read_only=True, source='chrom')
+    chromosome = drf_serializers.CharField(source='chrom', read_only=True)
     position = drf_serializers.IntegerField(source='pos', read_only=True)
     ref_allele = drf_serializers.CharField(source='ref', read_only=True)
     alt_allele = drf_serializers.CharField(source='alt', read_only=True)
-    log_pvalue = drf_serializers.FloatField(read_only=True)
+    log_pvalue = drf_serializers.FloatField(source='neg_log_pvalue', read_only=True)
     variant = drf_serializers.CharField(source='marker', read_only=True)
 

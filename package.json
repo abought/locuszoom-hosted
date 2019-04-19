@@ -24,7 +24,7 @@
   "dependencies": {
     "gwas-credible-sets": "^0.1.0",
     "locuszoom": "statgen/locuszoom#develop",
-    "locuszoom-tabix": "abought/locuszoom-tabix#dac4eb0d9dedb53a9ca08aff0101c94beab0a2b2",
+    "locuszoom-tabix": "abought/locuszoom-tabix#c39296c50d673f4d15621d93d7b161e1b74613df",
     "pako": "^1.0.8",
     "vue": "^2.6.7"
   },

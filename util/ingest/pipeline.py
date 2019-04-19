@@ -38,7 +38,7 @@ def standard_gwas_pipeline(
     # - Validate file format (ingest.validators)
     # - normalized.gz- Write a cleaned, tabix-compressed version of the file that represents the data we can read
     #   (zorp.reader.write)
-    #     - normalize.log Track the output of the conversion script
+    #     - TODO  normalize.log Track the output of the conversion script
     # - manhattan.json - Make manhattan plot json file
     # - qq.json - Make QQ plot json file
 
@@ -53,6 +53,7 @@ def standard_gwas_pipeline(
         return False
 
     return all([
+        # TODO: Add a top hit detector, using a zorp standard reader
         processors.generate_manhattan(normalized_path, manhattan_path),
         processors.generate_qq(normalized_path, qq_path),
     ])

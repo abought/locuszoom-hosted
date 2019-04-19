@@ -63,7 +63,7 @@ def _pheweb_adapter(reader) -> ty.Iterator[dict]:
 @helpers.capture_errors
 def generate_manhattan(in_filename: str, out_filename: str) -> bool:
     """Generate manhattan plot data for the processed file"""
-    reader = readers.standard_gwas_reader(in_filename).add_filter("log_pvalue", lambda v, row: v is not None)
+    reader = readers.standard_gwas_reader(in_filename).add_filter("neg_log_pvalue", lambda v, row: v is not None)
     reader_adapter = _pheweb_adapter(reader)
 
     binner = manhattan.Binner()
@@ -84,7 +84,7 @@ def generate_qq(in_filename: str, out_filename) -> bool:
     # TODO: Currently the ingest pipeline never stores "af"/"maf" at all, which could affect this calculation
     # TODO: This step appears to load ALL data into memory (list on generator). This could be a memory hog; not sure if
     #   there is a way around it as it seems to rely on sorting values
-    reader = readers.standard_gwas_reader(in_filename).add_filter("log_pvalue", lambda v, row: v is not None)
+    reader = readers.standard_gwas_reader(in_filename).add_filter("neg_log_pvalue", lambda v, row: v is not None)
     reader_adapter = _pheweb_adapter(reader)
 
     # TODO: Pheweb QQ code benefits from being passed { num_samples: n }, from metadata stored outside the

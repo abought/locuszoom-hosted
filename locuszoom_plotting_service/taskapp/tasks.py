@@ -4,6 +4,7 @@ import os
 from celery.utils.log import get_task_logger
 from celery import shared_task
 from django.conf import settings
+from django.core.mail import send_mail
 from django.db.models import signals
 from django.dispatch import receiver
 from django.utils import timezone
@@ -65,8 +66,13 @@ def email_admins(self):
 def analysis_upload_notify(self, gwas_id):
     """Notify the owner of a gwas that ingestion has successfully completed"""
     instance = models.Gwas.objects.get(pk=gwas_id)
-    print(f'Request: {self.request!r}')
+
+    send_mail('Results done processing',
+              'Your results are done processing. ',  # TODO: Add url, might require finding a top hit first
+              'noreply@umich.edu',
+              [instance.owner.email])
     print('Will notify: ', instance.owner.email)
+    # FIXME: implement email notifications
     pass
 
 
