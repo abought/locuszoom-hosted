@@ -1,5 +1,6 @@
 """(mostly) Template-based front end views"""
 
+import json
 import os
 import typing as ty
 
@@ -90,6 +91,16 @@ class GwasSummary(LoginRequiredMixin, lz_permissions.GwasAccessPermission, Detai
     template_name = 'gwas/gwas_summary.html'
     queryset = lz_models.Gwas.objects.all()
 
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        gwas = self.get_object()
+        context['js_vars'] = json.dumps({
+            'ingest_status': gwas.ingest_status,
+            'manhattan_url': reverse('gwas:manhattan-json', kwargs={'pk': gwas.id}),
+            'qq_url': reverse('gwas:qq-json', kwargs={'pk': gwas.id}),
+        })
+        return context
+
 
 class GwasLocus(LoginRequiredMixin, lz_permissions.GwasAccessPermission, DetailView):
     """
@@ -106,7 +117,6 @@ class GwasLocus(LoginRequiredMixin, lz_permissions.GwasAccessPermission, DetailV
         context = super().get_context_data(**kwargs)
         gwas = self.get_object()
 
-        import json # TODO: proper template handling
         context['js_vars'] = json.dumps({
             'assoc_base_url': reverse('apiv1:gwas-region', kwargs={'pk': gwas.id}),
             'label': gwas.analysis,

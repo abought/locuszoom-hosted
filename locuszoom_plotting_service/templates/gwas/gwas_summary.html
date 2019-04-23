@@ -1,5 +1,5 @@
 {% extends 'base.html' %}
-{% load staticfiles %}
+{% load render_bundle from webpack_loader %}
 
 
 {% block title %}Study- {{ gwas.analysis }}{% endblock %}
@@ -84,6 +84,13 @@
     </div>
 
     <div class="row">
+      <div class="col-md-12">
+        <h3>Top Hits</h3>
+        <div id="top-hits-table"></div>
+      </div>
+    </div>
+
+    <div class="row">
       <div class="pheno-info col-xs-12 col-sm-4 col-md-3 col-lg-3">
         <h3>QQ plot:</h3>
         <div id="qq_plot_container"></div>
@@ -101,67 +108,23 @@
 {% endblock %}
 
 {% block javascript %}
-  {#  PheWeb manhattan plot requirements #}
-  <script src="https://cdn.jsdelivr.net/npm/d3@3.5.16" type="application/javascript"></script>
-  <script src="https://cdn.jsdelivr.net/npm/underscore@1.8.3" type="application/javascript"></script>
-  <script src="https://cdn.jsdelivr.net/npm/d3-tip@0.6.7" type="application/javascript"></script>
+    <script src="https://cdn.jsdelivr.net/npm/d3@3.5.16" type="application/javascript"></script>
 
-  <script src="{% static 'js/pheweb/pheno.js' %}" type="application/javascript"></script>
+    <script src="https://cdn.jsdelivr.net/npm/d3-tip@0.6.7" type="application/javascript"></script>
 
+    <script type="application/javascript">
+      {#var template_args = JSON.parse(document.getElementById('js-vars').textContent);#}
+      {# FIXME: Improve JS variable handling for Django 2.1 LTS #}
+      window.template_args = {{ js_vars |safe }};
 
-  <script type="application/javascript">
-    // Required as hardcoded global reference in PheWeb pheno.js
-    window.model = {
-      // TODO: make sure more variants have ref/alt information
-      urlprefix: '{% url 'gwas:region' gwas.id %}',
-      tooltip_underscoretemplate: '<b><%= d.chrom %>:<%= d.pos.toLocaleString() %></b><br>'
-    };
-    window.pheno = '';  // FIXME: Pheno.js hardcodes a specific link structure that will be wrong for this site
+      // Required as hardcoded global reference in PheWeb pheno.js
+      window.model = {
+        // TODO: make sure more variants have ref/alt information
+        urlprefix: '{% url 'gwas:region' gwas.id %}',
+        tooltip_underscoretemplate: '<b><%= d.chrom %>:<%= d.pos.toLocaleString() %></b><br>'
+      };
+      window.pheno = '';  // FIXME: Pheno.js hardcodes a specific link structure that will be wrong for this site
+    </script>
 
-
-    {% if gwas.ingest_status == 2 %}
-      window.addEventListener('load', function () {
-        fetch('{% url 'gwas:manhattan-json' gwas.id %}')
-          .then(resp => {
-            if (!resp.ok) {
-              throw Error('Could not fetch manhattan json')
-            }
-            return resp.json();
-          })
-          .then(data => {
-            create_gwas_plot(data.variant_bins, data.unbinned_variants);
-          }).catch(() => {
-            document.getElementById('manhattan_plot_container').textContent = 'Could not fetch Manhattan plot data.';
-        });
-
-        fetch('{% url 'gwas:qq-json' gwas.id %}')
-          .then(resp => {
-            if (!resp.ok) {
-              throw Error('Could not fetch QQ json')
-            }
-            return resp.json();
-          })
-          .then(data => {
-            _.sortBy(_.pairs(data.overall.gc_lambda), function (d) {
-              return -d[0];
-            }).forEach(function (d, i) {
-              // FIXME: Manually constructed HTML; change
-              var text = 'GC lambda ' + d[0] + ': ' + d[1].toFixed(3);
-              if (i === 0) {
-                text = '<b>' + text + '</b>';
-              }
-              text = '<br>' + text;
-              $('.gc-control').append(text);
-            });
-            if (data.by_maf) {
-              create_qq_plot(data.by_maf, data.ci);
-            } else {
-              create_qq_plot([{ maf_range: [0, 0.5], qq: data.overall.qq, count: data.overall.count }], data.ci);
-            }
-          }).catch(() => {
-            document.getElementById('qq_plot_container').textContent = 'Could not fetch QQ plot data.';
-        });
-      });
-    {% endif %}
-  </script>
+  {% render_bundle 'gwas_summary' %}
 {% endblock %}

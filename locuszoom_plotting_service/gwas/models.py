@@ -128,8 +128,8 @@ class RegionView(TimeStampedModel):
     start = models.PositiveIntegerField()
     end = models.PositiveIntegerField()
 
-    # Additional arbitrary params associated with the page- URL query params
-    options = JSONField(null=True, blank=True)  # TODO: Decouple front and backend as requirements emerge
+    options = JSONField(null=True, blank=True,  # TODO: decouple front and back end as requirements evolve
+                        help_text="Additional arbitrary params associated with the page- URL query params. (eg plot features or options)")
 
     def can_view(self, current_user):
         """View permissions are solely determined by the underlying study"""
