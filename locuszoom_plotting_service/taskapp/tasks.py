@@ -37,6 +37,7 @@ def analysis_upload_pipeline(self, gwas_id: int):
 
     try:
         pipeline.standard_gwas_pipeline(
+            gwas_id,
             os.path.join(settings.MEDIA_ROOT, instance.raw_gwas_file.name),
             instance.parser_options,
             instance.normalized_gwas_path,
@@ -68,12 +69,9 @@ def analysis_upload_notify(self, gwas_id):
     instance = models.Gwas.objects.get(pk=gwas_id)
 
     send_mail('Results done processing',
-              'Your results are done processing. ',  # TODO: Add url, might require finding a top hit first
+              f'Your results are done processing. Please visit {instance.get_absolute_url()} to see the Manhattan plot.',
               'noreply@umich.edu',
               [instance.owner.email])
-    print('Will notify: ', instance.owner.email)
-    # FIXME: implement email notifications
-    pass
 
 
 @receiver(signals.post_save, sender=models.Gwas)
@@ -91,7 +89,7 @@ def gwas_upload_signal(sender, instance: models.Gwas = None, created=None, **kwa
     if not created or not instance:
         return
 
-    # TODO: provide a way to disable pipeline for unit tests
+    # TODO: provide a way to disable pipeline for unit tests (besides not running celery)
 
     #  Submit a celery task immediately
     analysis_upload_pipeline.apply_async(

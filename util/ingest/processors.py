@@ -3,6 +3,7 @@ Steps used to process a GWAS file for future use
 """
 import json
 import logging
+import math
 import typing as ty
 
 from pheweb.load import (
@@ -18,6 +19,8 @@ from zorp import (
 )
 # from .exceptions import ManhattanExeption, QQPlotException, UnexpectedIngestException
 from . import helpers
+
+from locuszoom_plotting_service.gwas import models
 
 logger = logging.getLogger(__name__)
 
@@ -63,7 +66,12 @@ def _pheweb_adapter(reader) -> ty.Iterator[dict]:
 @helpers.capture_errors
 def generate_manhattan(in_filename: str, out_filename: str) -> bool:
     """Generate manhattan plot data for the processed file"""
-    reader = readers.standard_gwas_reader(in_filename).add_filter("neg_log_pvalue", lambda v, row: v is not None)
+    # FIXME: Pheweb loader code does not handle infinity values; exclude these from manhattan plots
+    #   This is almost assuredly not the final desired behavior
+    reader = readers.standard_gwas_reader(in_filename)\
+        .add_filter('neg_log_pvalue', lambda v, row: v is not None)\
+        .add_filter('neg_log_pvalue', lambda v, row: not math.isinf(v))
+
     reader_adapter = _pheweb_adapter(reader)
 
     binner = manhattan.Binner()
@@ -84,7 +92,12 @@ def generate_qq(in_filename: str, out_filename) -> bool:
     # TODO: Currently the ingest pipeline never stores "af"/"maf" at all, which could affect this calculation
     # TODO: This step appears to load ALL data into memory (list on generator). This could be a memory hog; not sure if
     #   there is a way around it as it seems to rely on sorting values
-    reader = readers.standard_gwas_reader(in_filename).add_filter("neg_log_pvalue", lambda v, row: v is not None)
+
+    # FIXME: See note above: we will exclude "infinity" values for now, but this is not the desired behavior because it
+    #   hides the hits of greatest interest
+    reader = readers.standard_gwas_reader(in_filename)\
+        .add_filter("neg_log_pvalue", lambda v, row: v is not None)\
+        .add_filter('neg_log_pvalue', lambda v, row: not math.isinf(v))
     reader_adapter = _pheweb_adapter(reader)
 
     # TODO: Pheweb QQ code benefits from being passed { num_samples: n }, from metadata stored outside the
@@ -106,4 +119,36 @@ def generate_qq(in_filename: str, out_filename) -> bool:
     with open(out_filename, 'w') as f:
         json.dump(rv, f)
 
+    return True
+
+@helpers.capture_errors
+def get_top_hit(in_filename: str, gwas_id: ty.Union[str, int]) -> bool:
+    """
+    Find the very top hit in the study
+
+    Although most of the tasks in our pipeline are written to be ORM-agnostic, this one modifies the database.
+    """
+    gwas = models.Gwas.objects.get(pk=gwas_id)
+    reader = readers.standard_gwas_reader(in_filename).add_filter("neg_log_pvalue", lambda v, row: v is not None)
+    best_pval = 1
+    best_row = None
+    for row in reader:
+        if row.pval < best_pval:
+            best_pval = row.pval
+            best_row = row
+
+    if best_row is None:
+        raise Exception('No usable top hit could be identified. Check that the file has valid p-values.')
+
+    top_hit = models.RegionView.objects.create(
+        label='Top hit',
+        chrom=best_row.chrom,
+        start=best_row.pos - 250_000,
+        end=best_row.pos + 250_000
+    )
+    gwas.top_hit_view = top_hit
+
+    gwas.save()
+    print('----', top_hit)
+    print(gwas.top_hit_view)
     return True

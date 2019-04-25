@@ -28,6 +28,7 @@ logger = logging.getLogger(__name__)
 
 @helpers.capture_errors
 def standard_gwas_pipeline(
+    gwas_id: int,
     src_path: str,
     parser_options: dict,  # as zorp parser kwargs
     normalized_path: str,
@@ -53,7 +54,7 @@ def standard_gwas_pipeline(
         return False
 
     return all([
-        # TODO: Add a top hit detector, using a zorp standard reader
+        processors.get_top_hit(normalized_path, gwas_id),
         processors.generate_manhattan(normalized_path, manhattan_path),
         processors.generate_qq(normalized_path, qq_path),
     ])

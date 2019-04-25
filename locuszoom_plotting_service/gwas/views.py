@@ -122,6 +122,9 @@ class GwasLocus(LoginRequiredMixin, lz_permissions.GwasAccessPermission, DetailV
             'label': gwas.analysis,
             'build': gwas.build,
             # TODO- future: provide sane default values for chr, start, and end position (if user hits url without a region selected)
+            'chr': gwas.top_hit_view.chrom,
+            'start': gwas.top_hit_view.start,
+            'end': gwas.top_hit_view.end,
 
         })
         return context

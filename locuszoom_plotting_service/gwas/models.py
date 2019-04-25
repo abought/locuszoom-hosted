@@ -37,6 +37,11 @@ class Gwas(TimeStampedModel):
     is_public = models.BooleanField(default=False, help_text='Is this study visible to everyone?')
 
     # Metadata that the user must fill in when uploading
+    pmid = models.CharField(max_length=20,
+                            blank=True,
+                            null=True,
+                            help_text='The PubMed ID associated with a published GWAS')
+
     build = models.CharField(max_length=10, choices=constants.GENOME_BUILDS)
     imputed = models.CharField(max_length=25, blank=True,
                                # TODO: This may be too restrictive?
@@ -50,7 +55,6 @@ class Gwas(TimeStampedModel):
                                help_text='Parser options (zorp-compatible parser kwarg names)')
 
     # Data to be filled in by upload/ post processing steps
-    # TODO: Get top hit view
     top_hit_view = models.OneToOneField('gwas.RegionView', on_delete=models.SET_NULL, null=True, related_name='+')
 
     ingest_status = models.IntegerField(choices=constants.INGEST_STATES, default=0,
@@ -119,7 +123,6 @@ class RegionView(TimeStampedModel):
     """
     # What is this view associated with? Allows users to save views for someone else's (public) datasets
     user = models.ForeignKey(User, on_delete=models.DO_NOTHING, null=True)  # Null for views created by system
-    gwas = models.ForeignKey(Gwas, on_delete=models.DO_NOTHING)
 
     label = models.CharField(max_length=100)
 
