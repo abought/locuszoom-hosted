@@ -39,6 +39,7 @@ function createTopHitsTable(selector, data) {
 if (window.template_args.ingest_status === 2) {
     // If the file has been processed, show processed results
     window.addEventListener('load', function () {
+        // Generate manhattan plot
         fetch(window.template_args.manhattan_url)
             .then(resp => {
                 if (!resp.ok) {
@@ -57,6 +58,7 @@ if (window.template_args.ingest_status === 2) {
                 document.getElementById('manhattan_plot_container').textContent = 'Could not fetch Manhattan plot data.';
             });
 
+        // Generate QQ plot
         fetch(window.template_args.qq_url)
             .then(resp => {
                 if (!resp.ok) {

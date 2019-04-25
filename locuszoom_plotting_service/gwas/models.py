@@ -55,7 +55,7 @@ class Gwas(TimeStampedModel):
                                help_text='Parser options (zorp-compatible parser kwarg names)')
 
     # Data to be filled in by upload/ post processing steps
-    top_hit_view = models.OneToOneField('gwas.RegionView', on_delete=models.SET_NULL, null=True, related_name='+')
+    top_hit_view = models.OneToOneField('gwas.RegionView', on_delete=models.SET_NULL, null=True)
 
     ingest_status = models.IntegerField(choices=constants.INGEST_STATES, default=0,
                                         help_text='Track progress of data ingestion')  # All-or-nothing!
@@ -70,8 +70,8 @@ class Gwas(TimeStampedModel):
     raw_gwas_file = models.FileField(upload_to=util.get_gwas_raw_fn,
                                      verbose_name='GWAS file',
                                      help_text='The GWAS data to be uploaded. May be text-based, or (b)gzip compressed')
-    file_sha256 = models.CharField(max_length=64,
-                                   help_text='The hash of the original, raw uploaded file')
+    file_sha256 = models.BinaryField(max_length=32,
+                                     help_text='The hash of the original, raw uploaded file')
 
     def get_absolute_url(self):
         return reverse('gwas:overview', kwargs={'pk': self.id})
@@ -136,6 +136,7 @@ class RegionView(TimeStampedModel):
 
     def can_view(self, current_user):
         """View permissions are solely determined by the underlying study"""
+        # TODO: Fix backrefs here; sort out relationships.
         return self.gwas.can_view(current_user)
 
     def get_absolute_url(self):

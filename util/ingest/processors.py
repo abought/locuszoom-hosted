@@ -10,7 +10,6 @@ from pheweb.load import (
     manhattan,
     qq,
 )
-
 from zorp import (
     exceptions as z_exc,
     parsers,
@@ -18,6 +17,7 @@ from zorp import (
     sniffers
 )
 # from .exceptions import ManhattanExeption, QQPlotException, UnexpectedIngestException
+from . exceptions import TopHitException
 from . import helpers
 
 from locuszoom_plotting_service.gwas import models
@@ -138,7 +138,7 @@ def get_top_hit(in_filename: str, gwas_id: ty.Union[str, int]) -> bool:
             best_row = row
 
     if best_row is None:
-        raise Exception('No usable top hit could be identified. Check that the file has valid p-values.')
+        raise TopHitException('No usable top hit could be identified. Check that the file has valid p-values.')
 
     top_hit = models.RegionView.objects.create(
         label='Top hit',

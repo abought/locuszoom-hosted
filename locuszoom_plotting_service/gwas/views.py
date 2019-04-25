@@ -51,7 +51,11 @@ def home(request):
 class GwasCreate(LoginRequiredMixin, CreateView):
     """Render a simple HTML form"""
     model = lz_models.Gwas
-    fields = ['analysis', 'is_public', 'build', 'imputed', 'n_cases', 'n_controls', 'parser_options', 'raw_gwas_file']
+    fields = ['analysis',
+              # 'pmid', 'is_public',
+              'build',
+              # 'imputed', 'n_cases', 'n_controls',
+              'parser_options', 'raw_gwas_file']
     template_name = 'gwas/upload.html'
 
     def form_valid(self, form):
@@ -106,11 +110,10 @@ class GwasLocus(LoginRequiredMixin, lz_permissions.GwasAccessPermission, DetailV
     """
     A LocusZoom plot associated with one specific GWAS region
 
-    The region is actually specified as query params; we will need a mechanism to define a "Default region"
-    for bare URLs (TODO)
+    The region is actually specified as query params; if none are provided, it defaults to the top hit in the study
     """
     template_name = 'gwas/gwas_region.html'
-    queryset = lz_models.Gwas.objects.all()  # TODO: Consider filtering queryset (eg eliminate deleted etc)
+    queryset = lz_models.Gwas.objects.all()  # TODO: Consider filtering queryset (eg eliminate things that were deleted, failed processing step, etc)
 
     def get_context_data(self, **kwargs):
         """Additional template context"""
@@ -121,7 +124,7 @@ class GwasLocus(LoginRequiredMixin, lz_permissions.GwasAccessPermission, DetailV
             'assoc_base_url': reverse('apiv1:gwas-region', kwargs={'pk': gwas.id}),
             'label': gwas.analysis,
             'build': gwas.build,
-            # TODO- future: provide sane default values for chr, start, and end position (if user hits url without a region selected)
+            # Default region for bare URLs is the top hit in the study
             'chr': gwas.top_hit_view.chrom,
             'start': gwas.top_hit_view.start,
             'end': gwas.top_hit_view.end,

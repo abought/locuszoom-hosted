@@ -88,6 +88,11 @@ Create a container just to run a command::
     $ docker-compose -f local.yml run --rm django bash
 
 
+Similarly, the django app can be probed interactively (eg, to experiment with the ORM) via an enhanced python shell::
+
+    $ docker-compose -f local.yml run --rm django ./manage.py shell_plus
+
+
 Type checks
 ^^^^^^^^^^^
 

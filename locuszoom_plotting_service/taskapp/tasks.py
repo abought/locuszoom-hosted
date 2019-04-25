@@ -32,7 +32,7 @@ def analysis_upload_pipeline(self, gwas_id: int):
         else:
             shasum_256.update(f.read())
 
-    instance.file_sha256 = shasum_256.hexdigest()
+    instance.file_sha256 = shasum_256.digest()
     instance.save()
 
     try:

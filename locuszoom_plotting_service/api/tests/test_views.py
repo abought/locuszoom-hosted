@@ -36,5 +36,5 @@ class TestListviewPermissions(APITestCase):
 
     def test_api_requires_authentication(self):
         response = self.client.get(reverse('apiv1:gwas-list'))
-        # TODO: should this return a 403?
+        # TODO: should this return a 401?
         self.assertEqual(response.status_code, 403)
