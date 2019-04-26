@@ -113,7 +113,7 @@ class GwasLocus(LoginRequiredMixin, lz_permissions.GwasAccessPermission, DetailV
     The region is actually specified as query params; if none are provided, it defaults to the top hit in the study
     """
     template_name = 'gwas/gwas_region.html'
-    queryset = lz_models.Gwas.objects.all()  # TODO: Consider filtering queryset (eg eliminate things that were deleted, failed processing step, etc)
+    queryset = lz_models.Gwas.objects.filter(ingest_status=2)  # Filter to uploads that processed successfully
 
     def get_context_data(self, **kwargs):
         """Additional template context"""
@@ -128,6 +128,5 @@ class GwasLocus(LoginRequiredMixin, lz_permissions.GwasAccessPermission, DetailV
             'chr': gwas.top_hit_view.chrom,
             'start': gwas.top_hit_view.start,
             'end': gwas.top_hit_view.end,
-
         })
         return context

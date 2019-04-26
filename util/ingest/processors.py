@@ -1,6 +1,7 @@
 """
 Steps used to process a GWAS file for future use
 """
+import hashlib
 import json
 import logging
 import math
@@ -24,6 +25,19 @@ from locuszoom_plotting_service.gwas import models
 
 logger = logging.getLogger(__name__)
 
+
+@helpers.capture_errors
+def get_file_sha256(src_path, block_size=2 ** 20) -> bytes:
+    # https://stackoverflow.com/a/1131255/1422268
+    with open(src_path, 'rb') as f:
+        shasum_256 = hashlib.sha256()
+
+        while True:
+            data = f.read(block_size)
+            if not data:
+                break
+            shasum_256.update(data)
+        return shasum_256.digest()
 
 @helpers.capture_errors
 def normalize_contents(src_path: str, parser_options: dict, dest_path: str, log_path: str) -> bool:
@@ -54,6 +68,8 @@ def normalize_contents(src_path: str, parser_options: dict, dest_path: str, log_
                 return True
             else:
                 f.write('[failure] Could not create normalized GWAS file for: {}'.format(src_path))
+    # In reality a failing task will usually raise an exception rather than returning False
+    return False
 
 
 @helpers.capture_errors
@@ -122,13 +138,12 @@ def generate_qq(in_filename: str, out_filename) -> bool:
     return True
 
 @helpers.capture_errors
-def get_top_hit(in_filename: str, gwas_id: ty.Union[str, int]) -> bool:
+def get_top_hit(in_filename: str):
     """
     Find the very top hit in the study
 
     Although most of the tasks in our pipeline are written to be ORM-agnostic, this one modifies the database.
     """
-    gwas = models.Gwas.objects.get(pk=gwas_id)
     reader = readers.standard_gwas_reader(in_filename).add_filter("neg_log_pvalue", lambda v, row: v is not None)
     best_pval = 1
     best_row = None
@@ -140,15 +155,4 @@ def get_top_hit(in_filename: str, gwas_id: ty.Union[str, int]) -> bool:
     if best_row is None:
         raise TopHitException('No usable top hit could be identified. Check that the file has valid p-values.')
 
-    top_hit = models.RegionView.objects.create(
-        label='Top hit',
-        chrom=best_row.chrom,
-        start=best_row.pos - 250_000,
-        end=best_row.pos + 250_000
-    )
-    gwas.top_hit_view = top_hit
-
-    gwas.save()
-    print('----', top_hit)
-    print(gwas.top_hit_view)
-    return True
+    return best_row
