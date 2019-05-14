@@ -4,12 +4,7 @@ Steps used to process a GWAS file for future use
 import hashlib
 import json
 import logging
-import math
-import typing as ty
 
-from pheweb.load import (
-    qq,
-)
 from zorp import (
     exceptions as z_exc,
     parsers,
@@ -74,13 +69,6 @@ def normalize_contents(src_path: str, parser_options: dict, dest_path: str, log_
 
 
 @helpers.capture_errors
-def _pheweb_adapter(reader) -> ty.Iterator[dict]:
-    """Formats zorp parsed data into the format expected by pheweb"""
-    for row in reader:
-        yield {'chrom': row.chrom, 'pos': row.pos, 'pval': row.pvalue}
-
-
-@helpers.capture_errors
 def generate_manhattan(in_filename: str, out_filename: str) -> bool:
     """Generate manhattan plot data for the processed file"""
     # FIXME: Pheweb loader code does not handle infinity values, so we exclude these from manhattan plots
@@ -109,15 +97,12 @@ def generate_qq(in_filename: str, out_filename) -> bool:
     # FIXME: See note above: we will exclude "infinity" values for now, but this is not the desired behavior because it
     #   hides the hits of greatest interest
     reader = readers.standard_gwas_reader(in_filename)\
-        .add_filter("neg_log_pvalue", lambda v, row: v is not None)\
-        .add_filter('neg_log_pvalue', lambda v, row: not math.isinf(v))
-    reader_adapter = _pheweb_adapter(reader)
+        .add_filter("neg_log_pvalue", lambda v, row: v is not None)
 
     # TODO: Pheweb QQ code benefits from being passed { num_samples: n }, from metadata stored outside the
     #   gwas file. This is used when AF/MAF are present (which at the moment ingest pipeline does not support)
-    stub = {}
 
-    variants = list(qq.augment_variants(reader_adapter, stub))
+    variants = list(qq.augment_variants(reader))
 
     rv = {}
     if variants:

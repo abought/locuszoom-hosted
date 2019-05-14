@@ -14,8 +14,12 @@ Extracted from PheWeb: 2cfaa69
 
 import collections
 import heapq
+import logging
 
 from zorp.parsers import _basic_standard_container
+
+
+logger = logging.getLogger(__name__)
 
 
 class MaxPriorityQueue:
