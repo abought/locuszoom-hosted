@@ -18,8 +18,11 @@ from zorp import (
 )
 # from .exceptions import ManhattanExeption, QQPlotException, UnexpectedIngestException
 from . exceptions import TopHitException
-from . import helpers
-from . import manhattan
+from . import (
+    helpers,
+    manhattan,
+    qq
+)
 
 logger = logging.getLogger(__name__)
 

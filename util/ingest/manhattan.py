@@ -1,6 +1,9 @@
-'''
-This script creates json files which can be used to render Manhattan plots.
-'''
+"""
+Create json files which can be used to render Manhattan plots.
+
+Extracted from PheWeb: 2cfaa69
+"""
+
 
 # NOTE: `qval` means `-log10(pvalue)`
 
@@ -55,7 +58,7 @@ class MaxPriorityQueue:
 
 
 class Binner:
-    """Manhattan plot binner class, extracted from PheWeb: 2cfaa69"""
+    """Manhattan plot binner class"""
     def __init__(self, *,
                  peak_pval_threshold: float = 1e-6,
                  peak_sprawl_dist: int = int(200e3),

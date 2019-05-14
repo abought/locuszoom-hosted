@@ -24,6 +24,7 @@ pyyaml  # Required for OpenAPI rendering
 
 # Data ingestion pipeline
 git+git://github.com/statgen/pheweb.git@d3f6b1df826ae9548e3778eb7569915ee4ca5b6a
-boltons~=18.0  # pinned by pheweb
-python-magic==0.4.15
+boltons~=19.1  # pinned by pheweb
+scipy~=1.2
+python-magic==0.4.15  # TODO: May no longer be necessary
 git+git://github.com/abought/zorp.git@89fb0e34a7193590e76be7dbe8613b82eab46285
