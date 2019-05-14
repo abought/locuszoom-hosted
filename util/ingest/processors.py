@@ -8,7 +8,6 @@ import math
 import typing as ty
 
 from pheweb.load import (
-    manhattan,
     qq,
 )
 from zorp import (
@@ -20,8 +19,7 @@ from zorp import (
 # from .exceptions import ManhattanExeption, QQPlotException, UnexpectedIngestException
 from . exceptions import TopHitException
 from . import helpers
-
-from locuszoom_plotting_service.gwas import models
+from . import manhattan
 
 logger = logging.getLogger(__name__)
 
@@ -82,21 +80,17 @@ def _pheweb_adapter(reader) -> ty.Iterator[dict]:
 @helpers.capture_errors
 def generate_manhattan(in_filename: str, out_filename: str) -> bool:
     """Generate manhattan plot data for the processed file"""
-    # FIXME: Pheweb loader code does not handle infinity values; exclude these from manhattan plots
+    # FIXME: Pheweb loader code does not handle infinity values, so we exclude these from manhattan plots
     #   This is almost assuredly not the final desired behavior
     reader = readers.standard_gwas_reader(in_filename)\
-        .add_filter('neg_log_pvalue', lambda v, row: v is not None)\
-        .add_filter('neg_log_pvalue', lambda v, row: not math.isinf(v))
-
-    reader_adapter = _pheweb_adapter(reader)
+        .add_filter('neg_log_pvalue', lambda v, row: v is not None)
 
     binner = manhattan.Binner()
-    for variant in reader_adapter:
+    for variant in reader:
         binner.process_variant(variant)
 
     manhattan_data = binner.get_result()
 
-    # TODO: consider using boltons.atomicsaver in future
     with open(out_filename, 'w') as f:
         json.dump(manhattan_data, f)
     return True

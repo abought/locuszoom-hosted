@@ -27,6 +27,7 @@ class GwasFileSerializer(drf_serializers.Serializer):
     position = drf_serializers.IntegerField(source='pos', read_only=True)
     ref_allele = drf_serializers.CharField(source='ref', read_only=True)
     alt_allele = drf_serializers.CharField(source='alt', read_only=True)
+    # TODO: Make this a method field so we can special case inf as "Infinity"; update JS to type-coerce
     log_pvalue = drf_serializers.FloatField(source='neg_log_pvalue', read_only=True)
     variant = drf_serializers.CharField(source='marker', read_only=True)
 
