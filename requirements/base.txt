@@ -5,28 +5,23 @@ python-slugify==3.0.2  # https://github.com/un33k/python-slugify
 Pillow==6.0.0 # https://github.com/python-pillow/Pillow
 argon2-cffi==19.1.0  # https://github.com/hynek/argon2_cffi
 redis==3.2.1 # https://github.com/antirez/redis
-celery==4.3.0  # pyup: < 5.0  # https://github.com/celery/celery
+celery==4.4.2  # pyup: < 5.0  # https://github.com/celery/celery
 flower==0.9.3  # https://github.com/mher/flower
 whitenoise==4.1.2 # https://github.com/evansd/whitenoise
 
-# Pin version due to ongoing breakages that manifest as "unknown worker" in celery flower. See:
-#   https://github.com/celery/kombu/issues/1081
-#   https://github.com/mher/flower/issues/909
-kombu==4.6.3
-
 # Django
 # ------------------------------------------------------------------------------
-django==2.0.13  # pyup: < 2.1  # https://www.djangoproject.com/
+django==2.2.11  # pyup: < 2.1  # https://www.djangoproject.com/
 django-environ==0.4.5  # https://github.com/joke2k/django-environ
-django-model-utils==3.1.2  # https://github.com/jazzband/django-model-utils
+django-model-utils==4.0.0  # https://github.com/jazzband/django-model-utils
 django-filter==2.1.0  # https://github.com/carltongibson/django-filter/
-django-allauth==0.39.1  # https://github.com/pennersr/django-allauth
-django-crispy-forms==1.7.2  # https://github.com/django-crispy-forms/django-crispy-forms
+django-allauth==0.41.1  # https://github.com/pennersr/django-allauth
+django-crispy-forms==1.9.0  # https://github.com/django-crispy-forms/django-crispy-forms
 django-redis==4.10.0  # https://github.com/niwinz/django-redis
 django-webpack-loader==0.6.0
 
 # Django REST Framework
-djangorestframework==3.9.2  # https://github.com/encode/django-rest-framework
+djangorestframework==3.11.0  # https://github.com/encode/django-rest-framework
 coreapi==2.3.3  # https://github.com/core-api/python-client
 djangorestframework-jsonapi==2.7.0
 pyyaml  # Required for OpenAPI rendering

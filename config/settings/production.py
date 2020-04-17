@@ -3,6 +3,14 @@ import logging
 from .base import *  # noqa
 from .base import env
 
+# FIXME: Dependency upgrade task paused. Finish adjusting imports to work with sentry sdk
+import sentry_sdk
+
+from sentry_sdk.integrations.django import DjangoIntegration
+from sentry_sdk.integrations.logging import LoggingIntegration
+from sentry_sdk.integrations.celery import CeleryIntegration
+
+
 # GENERAL
 # ------------------------------------------------------------------------------
 # https://docs.djangoproject.com/en/dev/ref/settings/#secret-key
@@ -104,13 +112,6 @@ INSTALLED_APPS += ['gunicorn']  # noqa F405
 
 MIDDLEWARE.insert(1, "whitenoise.middleware.WhiteNoiseMiddleware") # noqa F405
 
-# raven
-# ------------------------------------------------------------------------------
-# https://docs.sentry.io/clients/python/integrations/django/
-INSTALLED_APPS += ['raven.contrib.django.raven_compat']  # noqa F405
-MIDDLEWARE = ['raven.contrib.django.raven_compat.middleware.SentryResponseErrorIdMiddleware'] + MIDDLEWARE  # NOQA
-
-
 SENTRY_CLIENT = env('DJANGO_SENTRY_CLIENT', default='raven.contrib.django.raven_compat.DjangoClient')
 LOGGING = {
     'version': 1,
@@ -126,10 +127,6 @@ LOGGING = {
         },
     },
     'handlers': {
-        'sentry': {
-            'level': 'ERROR',
-            'class': 'raven.contrib.django.raven_compat.handlers.SentryHandler',
-        },
         'console': {
             'level': 'DEBUG',
             'class': 'logging.StreamHandler',
@@ -146,11 +143,7 @@ LOGGING = {
             'handlers': ['console'],
             'propagate': False,
         },
-        'raven': {
-            'level': 'DEBUG',
-            'handlers': ['console'],
-            'propagate': False,
-        },
+        'sentry_sdk': {'level': 'ERROR', 'handlers': ['console'], 'propagate': False},
         'sentry.errors': {
             'level': 'DEBUG',
             'handlers': ['console'],
